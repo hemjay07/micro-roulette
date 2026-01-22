@@ -101,6 +101,16 @@ impl Contract for RouletteContract {
                 // The message serves as a notification - winnings are already credited
                 // by the main contract during execute_spin
             }
+            Message::BetConfirmed { player, bet_type, amount, round_total } => {
+                // Acknowledge bet was placed successfully
+                log::info!(
+                    "BetConfirmed: player={:?}, bet_type={}, amount={:?}, round_total={:?}",
+                    player, bet_type, amount, round_total
+                );
+
+                // This is a confirmation message - the bet is already in state
+                // from the original PlaceBet operation
+            }
             Message::Payout { player, spin_id, amount } => {
                 // Credit winnings to the player
                 self.credit(&player, amount).await;

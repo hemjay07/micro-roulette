@@ -61,6 +61,13 @@ pub enum Message {
         winnings: Amount,
         total_bet: Amount,
     },
+    /// Confirm bet was placed
+    BetConfirmed {
+        player: Owner,
+        bet_type: u8,
+        amount: Amount,
+        round_total: Amount,
+    },
     /// Payout notification
     Payout {
         player: Owner,

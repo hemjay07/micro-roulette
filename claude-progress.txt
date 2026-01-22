@@ -1,3 +1,77 @@
+## Session Log - 2026-01-22 (Session 10)
+
+### Session Start
+- Feature stats at start: 192 passing (54.5%)
+- Continued from session 9
+
+### Work Completed
+
+1. **Feature #79 - GraphQL response format matches UI** ✅
+   - Verified spinHistory query returns spinId, result, resultColor, seedHash
+   - Console logs confirmed correct format
+   - Improved SpinHistory.vue reactivity with toRef
+
+2. **Feature #80 - Payout calculation matches contract** ✅
+   - Placed 100 chip bet on straight number 17
+   - Expected payout: 100 × 36 = 3600
+   - maxPotentialWin correctly showed 3600 chips
+
+3. **Feature #81 - Balance display matches contract** ✅
+   - Demo balance starts at 1000 chips
+   - Header shows "1.00K chips" (formatAmount working correctly)
+   - Balance updated to 990 after losing 10 chip bet
+
+4. **Feature #82 - Table status syncs with UI** ✅
+   - Table status "Open" - betting buttons enabled
+   - During spin - SPIN button disabled
+   - After spin - returns to Open, betting re-enabled
+
+5. **Feature #83 - Config values displayed correctly** ✅
+   - minBet: 1M micro-units = 1 chip (matches chip selector min)
+   - maxBet: 100M micro-units = 100 chips
+   - houseEdgeBps: 270 = 2.7%
+
+6. **Feature #84 - Spin result displayed correctly** ✅
+   - Spin result 17 black displayed in wheel center
+   - Hot/cold numbers updated with result
+   - Console showed correct resultColor
+
+7. **Feature #85 - Fairness proof format correct** ✅
+   - nextSeedHash displayed with LOCKED badge
+   - currentSeed displayed as readable string
+   - Verification form available
+
+8. **Feature #86 - Mutation response handled correctly** ✅
+   - PlaceBet mutation executed successfully
+   - Spin mutation executed successfully
+   - fetchTableState called to update UI
+
+9. **Feature #87 - Timestamp displayed correctly** ✅
+   - spinId used for ordering (human-readable "Spin #1")
+   - Chronologically ordered history
+
+10. **Feature #91 - Selected chip persists in session** ✅
+    - Selected 100 chip, placed bets
+    - Chip selection persisted as "Current: 100"
+
+### Skipped Features (require deployed contract)
+- Feature #88 - Bets persist during page refresh (on-chain storage)
+- Feature #89 - Balance persists across sessions (on-chain storage)
+- Feature #90 - Spin history persists across restarts (on-chain storage)
+
+### Session Progress
+- Features at start: 192 passing (54.5%)
+- Features at end: 202 passing (57.4%)
+- Progress: +10 features, crossed 200 milestone!
+- 5 features remain blocked waiting for blockchain deployment
+
+### Next Priorities
+1. Continue with remaining State & Persistence features
+2. Move to Security features
+3. Test more UI-Backend integration scenarios
+
+---
+
 ## Session Log - 2026-01-22 (Session 9)
 
 ### Session Start

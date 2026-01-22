@@ -41,6 +41,9 @@ impl Service for RouletteService {
     async fn handle_query(&self, request: Request) -> Response {
         // Read current state values
         let house_edge_bps = *self.state.house_edge_bps.get();
+        let min_bet = self.state.min_bet.get().to_string();
+        let max_bet = self.state.max_bet.get().to_string();
+        let max_total_bet = self.state.max_total_bet.get().to_string();
         let spin_number = *self.state.spin_number.get();
         let status = *self.state.status.get();
         let round_total = *self.state.round_total.get();
@@ -70,6 +73,9 @@ impl Service for RouletteService {
             QueryRoot {
                 chain_id,
                 house_edge_bps,
+                min_bet,
+                max_bet,
+                max_total_bet,
                 spin_number,
                 status: status_str.to_string(),
                 is_betting_open: status == TableStatus::Open && !paused,
@@ -109,9 +115,20 @@ struct PlatformStats {
     total_spins: u64,
 }
 
+#[derive(SimpleObject)]
+struct Config {
+    min_bet: String,
+    max_bet: String,
+    max_total_bet: String,
+    house_edge_bps: u16,
+}
+
 struct QueryRoot {
     chain_id: String,
     house_edge_bps: u16,
+    min_bet: String,
+    max_bet: String,
+    max_total_bet: String,
     spin_number: u64,
     status: String,
     is_betting_open: bool,
@@ -140,6 +157,16 @@ impl QueryRoot {
     /// Get the chain ID (CRITICAL: Judges look for this!)
     async fn chain_id(&self) -> &str {
         &self.chain_id
+    }
+
+    /// Get configuration values (minBet, maxBet, houseEdgeBps)
+    async fn config(&self) -> Config {
+        Config {
+            min_bet: self.min_bet.clone(),
+            max_bet: self.max_bet.clone(),
+            max_total_bet: self.max_total_bet.clone(),
+            house_edge_bps: self.house_edge_bps,
+        }
     }
 
     /// Get table information

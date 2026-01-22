@@ -52,8 +52,19 @@ pub enum Operation {
 /// Messages sent between chains
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum Message {
-    /// Notify of spin result
-    SpinResult { spin_id: u64, result: u8, winnings: Amount },
+    /// Notify of spin result with details
+    SpinResult {
+        spin_id: u64,
+        result: u8,
+        winnings: Amount,
+        total_bet: Amount,
+    },
+    /// Payout notification
+    Payout {
+        player: Owner,
+        spin_id: u64,
+        amount: Amount,
+    },
 }
 
 /// Arguments for instantiating the application

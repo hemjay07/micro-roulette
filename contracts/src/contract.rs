@@ -88,8 +88,20 @@ impl Contract for RouletteContract {
     /// Handle incoming messages
     async fn execute_message(&mut self, message: Self::Message) {
         match message {
-            Message::SpinResult { spin_id, result, winnings } => {
-                log::info!("SpinResult: id={}, result={}, winnings={:?}", spin_id, result, winnings);
+            Message::SpinResult { spin_id, result, winnings, total_bet } => {
+                // This message is received by a player's chain to notify them of the spin result
+                log::info!(
+                    "SpinResult received: spin_id={}, result={}, winnings={:?}, total_bet={:?}",
+                    spin_id, result, winnings, total_bet
+                );
+
+                // The message serves as a notification - winnings are already credited
+                // by the main contract during execute_spin
+            }
+            Message::Payout { player, spin_id, amount } => {
+                // Credit winnings to the player
+                self.credit(&player, amount).await;
+                log::info!("Payout: player={:?}, spin_id={}, amount={:?}", player, spin_id, amount);
             }
         }
     }

@@ -76,6 +76,9 @@ impl Contract for RouletteContract {
             Operation::ExecuteSpin { client_seed } => {
                 self.execute_spin(client_seed).await;
             }
+            Operation::ResolveSpin { server_seed } => {
+                self.resolve_spin(server_seed).await;
+            }
             Operation::OpenNewRound => {
                 self.open_new_round().await;
             }
@@ -241,9 +244,15 @@ impl RouletteContract {
         // Generate server seed (in production, this would be pre-committed)
         let server_seed = format!("server_seed_{}", spin_number);
 
+        // Store seeds for later verification
+        self.state.last_client_seed.set(client_seed.clone());
+
         // Generate result using provable fairness
         let proof = FairnessProof::generate(&server_seed, &client_seed, spin_number);
         let result = RouletteNumber::new(proof.result).unwrap_or_default();
+
+        // Store result for verification
+        self.state.last_result.set(result.0);
 
         log::info!("Spin {} result: {} ({})", spin_number, result.0, result.color());
 
@@ -309,6 +318,43 @@ impl RouletteContract {
 
         log::info!("Spin complete. Total bets: {:?}, Total payout: {:?}",
             self.state.round_total.get(), total_payout);
+    }
+
+    /// Resolve spin by revealing the server seed for verification
+    async fn resolve_spin(&mut self, server_seed: String) {
+        let status = *self.state.status.get();
+        assert!(
+            status == TableStatus::PayingOut,
+            "Table must be in PayingOut state to resolve (current: {:?})",
+            status
+        );
+
+        // Store revealed server seed for verification
+        self.state.revealed_server_seed.set(server_seed.clone());
+
+        // Verify the result matches (optional verification)
+        let client_seed = self.state.last_client_seed.get().clone();
+        let spin_number = self.state.spin_number.get().saturating_sub(1); // Previous spin
+        let expected_result = *self.state.last_result.get();
+
+        let proof = FairnessProof::generate(&server_seed, &client_seed, spin_number);
+
+        if proof.result == expected_result {
+            log::info!(
+                "ResolveSpin: Server seed revealed and verified! Seed: {}..., Result: {}",
+                &server_seed[..8.min(server_seed.len())],
+                expected_result
+            );
+        } else {
+            log::warn!(
+                "ResolveSpin: Verification mismatch! Expected: {}, Got: {}",
+                expected_result,
+                proof.result
+            );
+        }
+
+        // Transition to open for next round (or let OpenNewRound handle this)
+        log::info!("Spin resolved. Ready for new round.");
     }
 
     /// Open table for a new round

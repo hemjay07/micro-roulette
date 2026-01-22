@@ -43,6 +43,8 @@ pub enum Operation {
     StartSpin,
     /// Execute the spin with randomness
     ExecuteSpin { client_seed: String },
+    /// Resolve spin and reveal server seed for verification
+    ResolveSpin { server_seed: String },
     /// Open table for new round
     OpenNewRound,
     /// Clear all current bets

@@ -41,4 +41,18 @@ pub struct RouletteState {
 
     /// Total spins (all time)
     pub total_spins: RegisterView<u64>,
+
+    // ========== Provable Fairness ==========
+
+    /// Committed server seed hash (shown before spin)
+    pub server_seed_hash: RegisterView<String>,
+
+    /// Revealed server seed (shown after spin for verification)
+    pub revealed_server_seed: RegisterView<String>,
+
+    /// Client seed used in last spin
+    pub last_client_seed: RegisterView<String>,
+
+    /// Last spin result number (0-36)
+    pub last_result: RegisterView<u8>,
 }

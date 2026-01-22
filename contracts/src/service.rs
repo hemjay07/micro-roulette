@@ -43,6 +43,12 @@ impl Service for RouletteService {
         let total_payouts = *self.state.total_payouts.get();
         let total_spins = *self.state.total_spins.get();
 
+        // Fairness data
+        let server_seed_hash = self.state.server_seed_hash.get().clone();
+        let revealed_server_seed = self.state.revealed_server_seed.get().clone();
+        let last_client_seed = self.state.last_client_seed.get().clone();
+        let last_result = *self.state.last_result.get();
+
         // Convert TableStatus to string
         let status_str = match status {
             TableStatus::Open => "Open",
@@ -61,6 +67,10 @@ impl Service for RouletteService {
                 total_volume: total_volume.to_string(),
                 total_payouts: total_payouts.to_string(),
                 total_spins,
+                server_seed_hash,
+                revealed_server_seed,
+                last_client_seed,
+                last_result,
             },
             MutationRoot,
             EmptySubscription,
@@ -97,6 +107,19 @@ struct QueryRoot {
     total_volume: String,
     total_payouts: String,
     total_spins: u64,
+    server_seed_hash: String,
+    revealed_server_seed: String,
+    last_client_seed: String,
+    last_result: u8,
+}
+
+#[derive(SimpleObject)]
+struct FairnessInfo {
+    server_seed_hash: String,
+    revealed_server_seed: String,
+    last_client_seed: String,
+    last_result: u8,
+    can_verify: bool,
 }
 
 #[Object]
@@ -144,6 +167,22 @@ impl QueryRoot {
             total_payouts: self.total_payouts.clone(),
             total_spins: self.total_spins,
         }
+    }
+
+    /// Get fairness information for verification
+    async fn fairness_info(&self) -> FairnessInfo {
+        FairnessInfo {
+            server_seed_hash: self.server_seed_hash.clone(),
+            revealed_server_seed: self.revealed_server_seed.clone(),
+            last_client_seed: self.last_client_seed.clone(),
+            last_result: self.last_result,
+            can_verify: !self.revealed_server_seed.is_empty(),
+        }
+    }
+
+    /// Get last spin result
+    async fn last_result(&self) -> u8 {
+        self.last_result
     }
 }
 

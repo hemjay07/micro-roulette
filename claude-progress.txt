@@ -1,3 +1,56 @@
+## Session Log - 2026-01-22 (Session 7)
+
+### Session Start
+- Feature stats at start: 164 passing (46.6%)
+- Continued from session 6
+
+### Regression Tests
+- Feature #211 (Header displays balance) - PASSED ✅
+- Feature #25 (WinningsPopup close button works) - PASSED ✅
+
+### Work Completed
+
+1. **Feature #37 - Player balance increases on win** ✅
+   - Started with 1.01K balance
+   - Placed 100 chip bet on RED
+   - Spin result: 32 red (won)
+   - Balance updated: 1.01K - 100 + 200 = 1.11K ✅
+
+2. **Feature #38 - Number stats accumulate correctly** ✅
+   - Added demoNumberStats tracking to useLinera.js
+   - Fixed HotColdNumbers component prop binding (was :hot/:cold, now :hot-numbers/:cold-numbers)
+   - After spins, Hot Numbers shows accumulated results (e.g., "0", "7")
+   - Cold Numbers shows same data (least frequent)
+
+3. **Feature #39 - Round total accumulates all bets** ✅
+   - Placed multiple bets: 20 chips on 7, 10 on RED, 10 on 17
+   - Total correctly showed 40 chips
+   - Contract code verified: round_total.saturating_add(amount) on each bet
+
+4. **Feature #40 - Server seed revealed after spin** ✅
+   - Fixed FairnessVerifier prop binding (was :proof, now :next-seed-hash/:current-seed)
+   - Before spin: "Available after first spin"
+   - After spin: Shows "demo-revealed-seed" with "REVEALED" badge
+
+### Code Changes
+- frontend/src/composables/useLinera.js: Added demoNumberStats tracking, getHotNumbers/getColdNumbers helpers
+- frontend/src/App.vue: Fixed HotColdNumbers and FairnessVerifier prop bindings
+
+### Commits This Session
+- "Add number stats tracking and fix HotColdNumbers component binding"
+- "Fix FairnessVerifier prop binding to display seed info correctly"
+
+### Session End
+- Features passing: 168 (47.7%)
+- Completed 4 features
+- All verified via browser testing
+
+### Next Session Priorities
+1. Continue with remaining Real Data Verification features
+2. Test SpinHistory display (currently shows "No spins yet" - needs investigation)
+
+---
+
 ## Session Log - 2026-01-22 (Session 6)
 
 ### Session Start

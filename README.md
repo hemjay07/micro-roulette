@@ -103,16 +103,49 @@ result = SHA256(server_seed + client_seed + nonce)[0] mod 37
 
 You can verify any spin in the Fairness Verifier section of the app.
 
+## Architecture: On-Chain vs Off-Chain
+
+MicroRoulette is designed with a clear separation between on-chain and off-chain components:
+
+### On-Chain (Linera Smart Contract)
+Everything critical to the game's integrity runs on-chain:
+
+| Component | Description |
+|-----------|-------------|
+| **Bet Placement** | All bets recorded in contract state |
+| **Balance Management** | Player balances stored in MapView |
+| **Randomness Generation** | SHA256-based provable fairness |
+| **Payout Calculation** | Winnings computed and distributed on-chain |
+| **Spin History** | Last 20 results stored in QueueView |
+| **Game State** | Table status, spin number, round totals |
+
+### Off-Chain (Frontend)
+The Vue.js frontend handles presentation and user interaction:
+
+| Component | Description |
+|-----------|-------------|
+| **Roulette Wheel Animation** | Visual spinning effect (decorative) |
+| **Bet Selection UI** | Drag/click to place chips (UI only) |
+| **Win Celebration** | Confetti effects |
+| **Hot/Cold Display** | Visualizes on-chain statistics |
+| **Wallet Connection** | linera-web handles key management |
+
+### Why This Split?
+- **Security**: All financial logic on-chain = trustless
+- **Performance**: Heavy animations off-chain = smooth UX
+- **Verifiability**: Anyone can verify spin results on-chain
+- **Transparency**: All state queryable via GraphQL
+
 ## Linera Features Used
 
-- ✅ **Microchains** - Each game runs on its own microchain for isolation
-- ✅ **Linera SDK v0.15.8** - Smart contracts compiled to WASM
-- ✅ **Linera Views** - MapView, RegisterView, QueueView for persistent state
-- ✅ **GraphQL Service** - Query and mutate state via async-graphql
-- ✅ **Cross-chain Messages** - SpinResult, BetConfirmed, Payout, Refund
-- ✅ **linera-web (@linera/client)** - Browser-native blockchain connection
-- ✅ **Conway Testnet** - Deployed to production testnet
-- ✅ **Sub-second Finality** - Fast settlement for real-time gameplay
+- **Microchains** - Each game runs on its own microchain for isolation
+- **Linera SDK v0.15.8** - Smart contracts compiled to WASM
+- **Linera Views** - MapView, RegisterView, QueueView for persistent state
+- **GraphQL Service** - Query and mutate state via async-graphql
+- **Cross-chain Messages** - SpinResult, BetConfirmed, Payout, Refund
+- **linera-web (@linera/client)** - Browser-native blockchain connection
+- **Conway Testnet** - Deployed to production testnet
+- **Sub-second Finality** - Fast settlement for real-time gameplay
 
 ## Technical Stack
 

@@ -45,6 +45,7 @@
           <ChipSelector
             :selected="selectedChip"
             :chips="availableChips"
+            :balance="balance"
             @select="selectedChip = $event"
           />
 

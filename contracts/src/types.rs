@@ -1,10 +1,26 @@
 // src/types.rs
 //! Core types for MicroRoulette
-//!
-//! Defines all the domain types including bets, results, and player data.
 
-use linera_sdk::base::{Amount, Owner, Timestamp};
+use linera_sdk::linera_base_types::Amount;
 use serde::{Deserialize, Serialize};
+
+// ============================================================================
+// TABLE STATUS
+// ============================================================================
+
+/// Current status of the roulette table
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize, Default)]
+pub enum TableStatus {
+    /// Table is accepting bets
+    #[default]
+    Open,
+    /// Wheel is spinning (bets locked)
+    Spinning,
+    /// Distributing winnings
+    PayingOut,
+    /// Table is closed
+    Closed,
+}
 
 // ============================================================================
 // ROULETTE NUMBER
@@ -74,9 +90,6 @@ impl RouletteNumber {
     }
 
     /// Get the column (1, 2, or 3) for this number
-    /// Column 1: 1,4,7,10,13,16,19,22,25,28,31,34
-    /// Column 2: 2,5,8,11,14,17,20,23,26,29,32,35
-    /// Column 3: 3,6,9,12,15,18,21,24,27,30,33,36
     pub fn column(&self) -> Option<u8> {
         if self.is_zero() {
             None
@@ -98,128 +111,94 @@ impl RouletteNumber {
 }
 
 // ============================================================================
-// BET TYPES
+// BET TYPE
 // ============================================================================
 
-/// Types of bets a player can make
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-pub enum BetType {
-    // Inside bets (higher payout, lower odds)
-    /// Single number (0-36), pays 35:1
-    Straight(u8),
-    /// Two adjacent numbers, pays 17:1
-    Split(u8, u8),
-    /// Row of 3 (street), pays 11:1. Value is the starting number (1, 4, 7, etc.)
-    Street(u8),
-    /// Four numbers (corner), pays 8:1
-    Corner(u8, u8, u8, u8),
-    /// Two rows (6 numbers), pays 5:1. Value is the starting row (1, 4, 7, etc.)
-    SixLine(u8),
-
-    // Outside bets (lower payout, higher odds)
-    /// Red numbers, pays 1:1
-    Red,
-    /// Black numbers, pays 1:1
-    Black,
-    /// Odd numbers, pays 1:1
-    Odd,
-    /// Even numbers, pays 1:1
-    Even,
-    /// Low (1-18), pays 1:1
-    Low,
-    /// High (19-36), pays 1:1
-    High,
-    /// Dozen (1=1-12, 2=13-24, 3=25-36), pays 2:1
-    Dozen(u8),
-    /// Column (1, 2, or 3), pays 2:1
-    Column(u8),
-}
+/// Types of bets a player can make (encoded as u8 for simplicity)
+/// 0 = Red, 1 = Black, 2 = Odd, 3 = Even, 4 = Low (1-18), 5 = High (19-36)
+/// 6 = Dozen 1, 7 = Dozen 2, 8 = Dozen 3
+/// 9 = Column 1, 10 = Column 2, 11 = Column 3
+/// 12-48 = Straight bet on number (bet_type - 12)
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct BetType(pub u8);
 
 impl BetType {
+    pub const RED: u8 = 0;
+    pub const BLACK: u8 = 1;
+    pub const ODD: u8 = 2;
+    pub const EVEN: u8 = 3;
+    pub const LOW: u8 = 4;
+    pub const HIGH: u8 = 5;
+    pub const DOZEN_1: u8 = 6;
+    pub const DOZEN_2: u8 = 7;
+    pub const DOZEN_3: u8 = 8;
+    pub const COLUMN_1: u8 = 9;
+    pub const COLUMN_2: u8 = 10;
+    pub const COLUMN_3: u8 = 11;
+    pub const STRAIGHT_OFFSET: u8 = 12;
+
+    /// Create a new bet type
+    pub fn new(value: u8) -> Option<Self> {
+        if value <= 48 {
+            Some(Self(value))
+        } else {
+            None
+        }
+    }
+
+    /// Check if this bet type is valid
+    pub fn is_valid(&self) -> bool {
+        self.0 <= 48
+    }
+
     /// Returns the payout multiplier for this bet type (not including original bet)
     pub fn payout_multiplier(&self) -> u64 {
-        match self {
-            BetType::Straight(_) => 35,
-            BetType::Split(_, _) => 17,
-            BetType::Street(_) => 11,
-            BetType::Corner(_, _, _, _) => 8,
-            BetType::SixLine(_) => 5,
-            BetType::Red | BetType::Black => 1,
-            BetType::Odd | BetType::Even => 1,
-            BetType::Low | BetType::High => 1,
-            BetType::Dozen(_) | BetType::Column(_) => 2,
+        match self.0 {
+            0..=5 => 1,   // Red, Black, Odd, Even, Low, High - pays 1:1
+            6..=8 => 2,   // Dozens - pays 2:1
+            9..=11 => 2,  // Columns - pays 2:1
+            12..=48 => 35, // Straight - pays 35:1
+            _ => 0,
         }
     }
 
     /// Check if this bet wins for a given number
     pub fn is_winner(&self, result: RouletteNumber) -> bool {
-        match self {
-            BetType::Straight(n) => result.0 == *n,
-            BetType::Split(a, b) => result.0 == *a || result.0 == *b,
-            BetType::Street(start) => {
-                let s = *start;
-                result.0 >= s && result.0 < s + 3 && !result.is_zero()
-            }
-            BetType::Corner(a, b, c, d) => {
-                result.0 == *a || result.0 == *b || result.0 == *c || result.0 == *d
-            }
-            BetType::SixLine(start) => {
-                let s = *start;
-                result.0 >= s && result.0 < s + 6 && !result.is_zero()
-            }
-            BetType::Red => result.is_red(),
-            BetType::Black => result.is_black(),
-            BetType::Odd => result.is_odd(),
-            BetType::Even => result.is_even(),
-            BetType::Low => result.is_low(),
-            BetType::High => result.is_high(),
-            BetType::Dozen(d) => result.dozen() == Some(*d),
-            BetType::Column(c) => result.column() == Some(*c),
+        match self.0 {
+            0 => result.is_red(),
+            1 => result.is_black(),
+            2 => result.is_odd(),
+            3 => result.is_even(),
+            4 => result.is_low(),
+            5 => result.is_high(),
+            6 => result.dozen() == Some(1),
+            7 => result.dozen() == Some(2),
+            8 => result.dozen() == Some(3),
+            9 => result.column() == Some(1),
+            10 => result.column() == Some(2),
+            11 => result.column() == Some(3),
+            n if n >= 12 && n <= 48 => result.0 == (n - 12),
+            _ => false,
         }
     }
 
-    /// Validate that the bet type parameters are valid
-    pub fn is_valid(&self) -> bool {
-        match self {
-            BetType::Straight(n) => *n <= 36,
-            BetType::Split(a, b) => *a <= 36 && *b <= 36 && Self::are_adjacent(*a, *b),
-            BetType::Street(start) => *start >= 1 && *start <= 34 && (*start - 1) % 3 == 0,
-            BetType::Corner(a, b, c, d) => {
-                *a <= 36 && *b <= 36 && *c <= 36 && *d <= 36 && *a > 0
-            }
-            BetType::SixLine(start) => *start >= 1 && *start <= 31 && (*start - 1) % 3 == 0,
-            BetType::Dozen(d) => *d >= 1 && *d <= 3,
-            BetType::Column(c) => *c >= 1 && *c <= 3,
-            _ => true,
-        }
-    }
-
-    /// Check if two numbers are adjacent on the betting board
-    fn are_adjacent(a: u8, b: u8) -> bool {
-        if a == 0 || b == 0 {
-            return false;
-        }
-        let diff = if a > b { a - b } else { b - a };
-        // Adjacent horizontally (diff = 1) or vertically (diff = 3)
-        diff == 1 || diff == 3
-    }
-
-    /// Get a display name for this bet type
+    /// Get display name for this bet type
     pub fn display_name(&self) -> String {
-        match self {
-            BetType::Straight(n) => format!("Straight {}", n),
-            BetType::Split(a, b) => format!("Split {}/{}", a, b),
-            BetType::Street(s) => format!("Street {}-{}", s, s + 2),
-            BetType::Corner(a, b, c, d) => format!("Corner {}/{}/{}/{}", a, b, c, d),
-            BetType::SixLine(s) => format!("Six Line {}-{}", s, s + 5),
-            BetType::Red => "Red".to_string(),
-            BetType::Black => "Black".to_string(),
-            BetType::Odd => "Odd".to_string(),
-            BetType::Even => "Even".to_string(),
-            BetType::Low => "1-18".to_string(),
-            BetType::High => "19-36".to_string(),
-            BetType::Dozen(d) => format!("Dozen {}", d),
-            BetType::Column(c) => format!("Column {}", c),
+        match self.0 {
+            0 => "Red".to_string(),
+            1 => "Black".to_string(),
+            2 => "Odd".to_string(),
+            3 => "Even".to_string(),
+            4 => "1-18".to_string(),
+            5 => "19-36".to_string(),
+            6 => "1st Dozen".to_string(),
+            7 => "2nd Dozen".to_string(),
+            8 => "3rd Dozen".to_string(),
+            9 => "Column 1".to_string(),
+            10 => "Column 2".to_string(),
+            11 => "Column 3".to_string(),
+            n if n >= 12 && n <= 48 => format!("{}", n - 12),
+            _ => "Invalid".to_string(),
         }
     }
 }
@@ -238,10 +217,11 @@ pub struct Bet {
 }
 
 impl Bet {
-    /// Create a new bet, returning None if invalid
-    pub fn new(bet_type: BetType, amount: Amount) -> Option<Self> {
-        if bet_type.is_valid() && amount > Amount::ZERO {
-            Some(Self { bet_type, amount })
+    /// Create a new bet
+    pub fn new(bet_type: u8, amount: Amount) -> Option<Self> {
+        let bt = BetType::new(bet_type)?;
+        if bt.is_valid() && amount > Amount::ZERO {
+            Some(Self { bet_type: bt, amount })
         } else {
             None
         }
@@ -250,8 +230,8 @@ impl Bet {
     /// Calculate total payout if this bet wins (original bet + winnings)
     pub fn calculate_payout(&self) -> Amount {
         let multiplier = self.bet_type.payout_multiplier();
-        let winnings = Amount::from_tokens(self.amount.as_tokens() * multiplier);
-        self.amount.saturating_add(winnings)
+        let winnings_value = self.amount.saturating_mul(multiplier);
+        self.amount.saturating_add(winnings_value)
     }
 }
 
@@ -262,8 +242,6 @@ impl Bet {
 /// Collection of bets from a single player for one spin
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct PlayerBets {
-    /// Player's address
-    pub player: Owner,
     /// List of bets
     pub bets: Vec<Bet>,
     /// Total amount wagered
@@ -271,10 +249,9 @@ pub struct PlayerBets {
 }
 
 impl PlayerBets {
-    /// Create a new empty bet collection for a player
-    pub fn new(player: Owner) -> Self {
+    /// Create a new empty bet collection
+    pub fn new() -> Self {
         Self {
-            player,
             bets: Vec::new(),
             total_amount: Amount::ZERO,
         }
@@ -302,33 +279,6 @@ impl PlayerBets {
         }
         total
     }
-
-    /// Calculate maximum potential payout (if all bets win)
-    pub fn max_potential_payout(&self) -> Amount {
-        let mut total = Amount::ZERO;
-        for bet in &self.bets {
-            total = total.saturating_add(bet.calculate_payout());
-        }
-        total
-    }
-}
-
-// ============================================================================
-// TABLE STATUS
-// ============================================================================
-
-/// Current status of the roulette table
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize, Default)]
-pub enum TableStatus {
-    /// Table is accepting bets
-    #[default]
-    Open,
-    /// Wheel is spinning (bets locked)
-    Spinning,
-    /// Distributing winnings
-    PayingOut,
-    /// Table is closed
-    Closed,
 }
 
 // ============================================================================
@@ -342,43 +292,16 @@ pub struct SpinResult {
     pub spin_id: u64,
     /// The winning number
     pub result: RouletteNumber,
-    /// When the spin occurred
-    pub timestamp: Timestamp,
     /// Hash of the seed used (for provable fairness)
     pub seed_hash: String,
     /// Total amount bet this spin
     pub total_bets: Amount,
     /// Total amount paid out
     pub total_payout: Amount,
-    /// Number of players who bet
-    pub player_count: u32,
 }
 
 // ============================================================================
-// PLAYER STATS
-// ============================================================================
-
-/// Lifetime statistics for a player
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub struct PlayerStats {
-    /// Total number of spins participated in
-    pub total_spins: u64,
-    /// Total amount wagered
-    pub total_wagered: Amount,
-    /// Total amount won
-    pub total_won: Amount,
-    /// Total amount lost
-    pub total_lost: Amount,
-    /// Biggest single win
-    pub biggest_win: Amount,
-    /// Current streak (positive = winning, negative = losing)
-    pub current_streak: i32,
-    /// Best winning streak
-    pub best_streak: i32,
-}
-
-// ============================================================================
-// PROVABLE FAIRNESS
+// FAIRNESS PROOF
 // ============================================================================
 
 /// Provable fairness data for verification
@@ -397,26 +320,6 @@ pub struct FairnessProof {
 }
 
 impl FairnessProof {
-    /// Verify that the result matches the seeds
-    pub fn verify(&self) -> bool {
-        use sha2::{Digest, Sha256};
-
-        let mut hasher = Sha256::new();
-        hasher.update(self.server_seed.as_bytes());
-        hasher.update(self.client_seed.as_bytes());
-        hasher.update(self.nonce.to_le_bytes());
-        let hash = hasher.finalize();
-
-        let computed_hash = hex::encode(&hash);
-        if computed_hash != self.combined_hash {
-            return false;
-        }
-
-        // Result is first byte mod 37 (consistent algorithm)
-        let computed_result = (hash[0] as u64 % 37) as u8;
-        computed_result == self.result
-    }
-
     /// Generate a new fairness proof
     pub fn generate(server_seed: &str, client_seed: &str, nonce: u64) -> Self {
         use sha2::{Digest, Sha256};
@@ -439,40 +342,23 @@ impl FairnessProof {
         }
     }
 
-    /// Hash a server seed (for commitment before spin)
-    pub fn hash_seed(seed: &str) -> String {
+    /// Verify that the result matches the seeds
+    pub fn verify(&self) -> bool {
         use sha2::{Digest, Sha256};
+
         let mut hasher = Sha256::new();
-        hasher.update(seed.as_bytes());
-        hex::encode(hasher.finalize())
-    }
-}
+        hasher.update(self.server_seed.as_bytes());
+        hasher.update(self.client_seed.as_bytes());
+        hasher.update(self.nonce.to_le_bytes());
+        let hash = hasher.finalize();
 
-// ============================================================================
-// TABLE CONFIG
-// ============================================================================
-
-/// Configuration for a roulette table
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct TableConfig {
-    /// Minimum bet amount
-    pub min_bet: Amount,
-    /// Maximum bet per position
-    pub max_bet: Amount,
-    /// Maximum total bet per spin per player
-    pub max_total_bet: Amount,
-    /// Betting time in seconds before auto-spin
-    pub betting_time_seconds: u64,
-}
-
-impl Default for TableConfig {
-    fn default() -> Self {
-        Self {
-            min_bet: Amount::from_tokens(1_000_000),        // 1 token
-            max_bet: Amount::from_tokens(100_000_000),     // 100 tokens
-            max_total_bet: Amount::from_tokens(500_000_000), // 500 tokens
-            betting_time_seconds: 30,
+        let computed_hash = hex::encode(&hash);
+        if computed_hash != self.combined_hash {
+            return false;
         }
+
+        let computed_result = (hash[0] as u64 % 37) as u8;
+        computed_result == self.result
     }
 }
 
@@ -484,268 +370,235 @@ impl Default for TableConfig {
 mod tests {
     use super::*;
 
+    // TableStatus tests
+    #[test]
+    fn test_table_status_default() {
+        let status = TableStatus::default();
+        assert_eq!(status, TableStatus::Open);
+    }
+
+    #[test]
+    fn test_table_status_transitions() {
+        let status = TableStatus::Open;
+        assert_eq!(status, TableStatus::Open);
+
+        let spinning = TableStatus::Spinning;
+        assert_eq!(spinning, TableStatus::Spinning);
+        assert_ne!(spinning, TableStatus::Open);
+
+        let paying_out = TableStatus::PayingOut;
+        assert_eq!(paying_out, TableStatus::PayingOut);
+
+        let closed = TableStatus::Closed;
+        assert_eq!(closed, TableStatus::Closed);
+    }
+
     // RouletteNumber tests
     #[test]
-    fn test_roulette_number_new_valid() {
-        for n in 0..=36 {
-            assert!(RouletteNumber::new(n).is_some());
-        }
-    }
-
-    #[test]
-    fn test_roulette_number_new_invalid() {
+    fn test_roulette_number_creation() {
+        assert!(RouletteNumber::new(0).is_some());
+        assert!(RouletteNumber::new(36).is_some());
         assert!(RouletteNumber::new(37).is_none());
-        assert!(RouletteNumber::new(100).is_none());
     }
 
     #[test]
-    fn test_roulette_number_is_zero() {
-        assert!(RouletteNumber(0).is_zero());
-        assert!(!RouletteNumber(1).is_zero());
+    fn test_roulette_number_zero() {
+        let zero = RouletteNumber::new(0).unwrap();
+        assert!(zero.is_zero());
+        assert!(!zero.is_red());
+        assert!(!zero.is_black());
+        assert_eq!(zero.color(), "green");
     }
 
     #[test]
-    fn test_roulette_number_is_red() {
-        let red_numbers = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+    fn test_roulette_number_red() {
+        let red_numbers = vec![1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
         for n in red_numbers {
-            assert!(RouletteNumber(n).is_red(), "Number {} should be red", n);
+            let num = RouletteNumber::new(n).unwrap();
+            assert!(num.is_red(), "Number {} should be red", n);
+            assert!(!num.is_black(), "Number {} should not be black", n);
+            assert_eq!(num.color(), "red", "Number {} should have color red", n);
         }
-        assert!(!RouletteNumber(0).is_red());
-        assert!(!RouletteNumber(2).is_red());
     }
 
     #[test]
-    fn test_roulette_number_is_black() {
-        let black_numbers = [2, 4, 6, 8, 10, 11, 13, 15, 17, 20, 22, 24, 26, 28, 29, 31, 33, 35];
+    fn test_roulette_number_black() {
+        let black_numbers = vec![2, 4, 6, 8, 10, 11, 13, 15, 17, 20, 22, 24, 26, 28, 29, 31, 33, 35];
         for n in black_numbers {
-            assert!(RouletteNumber(n).is_black(), "Number {} should be black", n);
+            let num = RouletteNumber::new(n).unwrap();
+            assert!(num.is_black(), "Number {} should be black", n);
+            assert!(!num.is_red(), "Number {} should not be red", n);
+            assert_eq!(num.color(), "black", "Number {} should have color black", n);
         }
-        assert!(!RouletteNumber(0).is_black());
-        assert!(!RouletteNumber(1).is_black());
     }
 
     #[test]
     fn test_roulette_number_odd_even() {
-        assert!(RouletteNumber(1).is_odd());
-        assert!(RouletteNumber(3).is_odd());
-        assert!(RouletteNumber(2).is_even());
-        assert!(RouletteNumber(4).is_even());
-        // Zero is neither
-        assert!(!RouletteNumber(0).is_odd());
-        assert!(!RouletteNumber(0).is_even());
+        let zero = RouletteNumber::new(0).unwrap();
+        assert!(!zero.is_odd());
+        assert!(!zero.is_even());
+
+        let one = RouletteNumber::new(1).unwrap();
+        assert!(one.is_odd());
+        assert!(!one.is_even());
+
+        let two = RouletteNumber::new(2).unwrap();
+        assert!(!two.is_odd());
+        assert!(two.is_even());
     }
 
     #[test]
     fn test_roulette_number_low_high() {
-        assert!(RouletteNumber(1).is_low());
-        assert!(RouletteNumber(18).is_low());
-        assert!(!RouletteNumber(19).is_low());
-        assert!(RouletteNumber(19).is_high());
-        assert!(RouletteNumber(36).is_high());
-        assert!(!RouletteNumber(18).is_high());
-        // Zero is neither
-        assert!(!RouletteNumber(0).is_low());
-        assert!(!RouletteNumber(0).is_high());
+        let zero = RouletteNumber::new(0).unwrap();
+        assert!(!zero.is_low());
+        assert!(!zero.is_high());
+
+        let one = RouletteNumber::new(1).unwrap();
+        assert!(one.is_low());
+        assert!(!one.is_high());
+
+        let eighteen = RouletteNumber::new(18).unwrap();
+        assert!(eighteen.is_low());
+        assert!(!eighteen.is_high());
+
+        let nineteen = RouletteNumber::new(19).unwrap();
+        assert!(!nineteen.is_low());
+        assert!(nineteen.is_high());
+
+        let thirty_six = RouletteNumber::new(36).unwrap();
+        assert!(!thirty_six.is_low());
+        assert!(thirty_six.is_high());
     }
 
     #[test]
-    fn test_roulette_number_dozen() {
-        assert_eq!(RouletteNumber(1).dozen(), Some(1));
-        assert_eq!(RouletteNumber(12).dozen(), Some(1));
-        assert_eq!(RouletteNumber(13).dozen(), Some(2));
-        assert_eq!(RouletteNumber(24).dozen(), Some(2));
-        assert_eq!(RouletteNumber(25).dozen(), Some(3));
-        assert_eq!(RouletteNumber(36).dozen(), Some(3));
-        assert_eq!(RouletteNumber(0).dozen(), None);
+    fn test_roulette_number_dozens() {
+        let zero = RouletteNumber::new(0).unwrap();
+        assert_eq!(zero.dozen(), None);
+
+        let one = RouletteNumber::new(1).unwrap();
+        assert_eq!(one.dozen(), Some(1));
+
+        let twelve = RouletteNumber::new(12).unwrap();
+        assert_eq!(twelve.dozen(), Some(1));
+
+        let thirteen = RouletteNumber::new(13).unwrap();
+        assert_eq!(thirteen.dozen(), Some(2));
+
+        let twenty_four = RouletteNumber::new(24).unwrap();
+        assert_eq!(twenty_four.dozen(), Some(2));
+
+        let twenty_five = RouletteNumber::new(25).unwrap();
+        assert_eq!(twenty_five.dozen(), Some(3));
+
+        let thirty_six = RouletteNumber::new(36).unwrap();
+        assert_eq!(thirty_six.dozen(), Some(3));
     }
 
     #[test]
-    fn test_roulette_number_column() {
-        assert_eq!(RouletteNumber(1).column(), Some(1));
-        assert_eq!(RouletteNumber(4).column(), Some(1));
-        assert_eq!(RouletteNumber(2).column(), Some(2));
-        assert_eq!(RouletteNumber(5).column(), Some(2));
-        assert_eq!(RouletteNumber(3).column(), Some(3));
-        assert_eq!(RouletteNumber(6).column(), Some(3));
-        assert_eq!(RouletteNumber(0).column(), None);
+    fn test_roulette_number_columns() {
+        let zero = RouletteNumber::new(0).unwrap();
+        assert_eq!(zero.column(), None);
+
+        // Column 1: 1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34
+        for n in [1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34] {
+            let num = RouletteNumber::new(n).unwrap();
+            assert_eq!(num.column(), Some(1), "Number {} should be in column 1", n);
+        }
+
+        // Column 2: 2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35
+        for n in [2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35] {
+            let num = RouletteNumber::new(n).unwrap();
+            assert_eq!(num.column(), Some(2), "Number {} should be in column 2", n);
+        }
+
+        // Column 3: 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36
+        for n in [3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36] {
+            let num = RouletteNumber::new(n).unwrap();
+            assert_eq!(num.column(), Some(3), "Number {} should be in column 3", n);
+        }
     }
 
     // BetType tests
     #[test]
-    fn test_bet_type_straight_payout() {
-        assert_eq!(BetType::Straight(7).payout_multiplier(), 35);
+    fn test_bet_type_creation() {
+        assert!(BetType::new(0).is_some());
+        assert!(BetType::new(48).is_some());
+        assert!(BetType::new(49).is_none());
     }
 
     #[test]
-    fn test_bet_type_split_payout() {
-        assert_eq!(BetType::Split(1, 2).payout_multiplier(), 17);
+    fn test_bet_type_payouts() {
+        // Even money bets pay 1:1
+        assert_eq!(BetType::new(BetType::RED).unwrap().payout_multiplier(), 1);
+        assert_eq!(BetType::new(BetType::BLACK).unwrap().payout_multiplier(), 1);
+        assert_eq!(BetType::new(BetType::ODD).unwrap().payout_multiplier(), 1);
+        assert_eq!(BetType::new(BetType::EVEN).unwrap().payout_multiplier(), 1);
+        assert_eq!(BetType::new(BetType::LOW).unwrap().payout_multiplier(), 1);
+        assert_eq!(BetType::new(BetType::HIGH).unwrap().payout_multiplier(), 1);
+
+        // Dozens and columns pay 2:1
+        assert_eq!(BetType::new(BetType::DOZEN_1).unwrap().payout_multiplier(), 2);
+        assert_eq!(BetType::new(BetType::DOZEN_2).unwrap().payout_multiplier(), 2);
+        assert_eq!(BetType::new(BetType::DOZEN_3).unwrap().payout_multiplier(), 2);
+        assert_eq!(BetType::new(BetType::COLUMN_1).unwrap().payout_multiplier(), 2);
+        assert_eq!(BetType::new(BetType::COLUMN_2).unwrap().payout_multiplier(), 2);
+        assert_eq!(BetType::new(BetType::COLUMN_3).unwrap().payout_multiplier(), 2);
+
+        // Straight bets pay 35:1
+        assert_eq!(BetType::new(BetType::STRAIGHT_OFFSET).unwrap().payout_multiplier(), 35);
+        assert_eq!(BetType::new(BetType::STRAIGHT_OFFSET + 17).unwrap().payout_multiplier(), 35);
     }
 
     #[test]
-    fn test_bet_type_street_payout() {
-        assert_eq!(BetType::Street(1).payout_multiplier(), 11);
-    }
+    fn test_bet_type_winners() {
+        let red_17 = RouletteNumber::new(17).unwrap();
+        let black_20 = RouletteNumber::new(20).unwrap();
+        let zero = RouletteNumber::new(0).unwrap();
 
-    #[test]
-    fn test_bet_type_corner_payout() {
-        assert_eq!(BetType::Corner(1, 2, 4, 5).payout_multiplier(), 8);
-    }
+        // Red/Black
+        assert!(BetType::new(BetType::BLACK).unwrap().is_winner(red_17)); // 17 is actually black!
+        assert!(!BetType::new(BetType::RED).unwrap().is_winner(red_17));
+        assert!(BetType::new(BetType::BLACK).unwrap().is_winner(black_20));
+        assert!(!BetType::new(BetType::RED).unwrap().is_winner(zero));
+        assert!(!BetType::new(BetType::BLACK).unwrap().is_winner(zero));
 
-    #[test]
-    fn test_bet_type_sixline_payout() {
-        assert_eq!(BetType::SixLine(1).payout_multiplier(), 5);
-    }
+        // Odd/Even
+        assert!(BetType::new(BetType::ODD).unwrap().is_winner(red_17));
+        assert!(!BetType::new(BetType::EVEN).unwrap().is_winner(red_17));
+        assert!(BetType::new(BetType::EVEN).unwrap().is_winner(black_20));
 
-    #[test]
-    fn test_bet_type_outside_payouts() {
-        assert_eq!(BetType::Red.payout_multiplier(), 1);
-        assert_eq!(BetType::Black.payout_multiplier(), 1);
-        assert_eq!(BetType::Odd.payout_multiplier(), 1);
-        assert_eq!(BetType::Even.payout_multiplier(), 1);
-        assert_eq!(BetType::Low.payout_multiplier(), 1);
-        assert_eq!(BetType::High.payout_multiplier(), 1);
-        assert_eq!(BetType::Dozen(1).payout_multiplier(), 2);
-        assert_eq!(BetType::Column(1).payout_multiplier(), 2);
-    }
-
-    #[test]
-    fn test_bet_type_is_winner_straight() {
-        assert!(BetType::Straight(7).is_winner(RouletteNumber(7)));
-        assert!(!BetType::Straight(7).is_winner(RouletteNumber(8)));
-    }
-
-    #[test]
-    fn test_bet_type_is_winner_red() {
-        assert!(BetType::Red.is_winner(RouletteNumber(1)));  // Red
-        assert!(!BetType::Red.is_winner(RouletteNumber(2))); // Black
-        assert!(!BetType::Red.is_winner(RouletteNumber(0))); // Green
-    }
-
-    #[test]
-    fn test_bet_type_is_winner_black() {
-        assert!(BetType::Black.is_winner(RouletteNumber(2)));  // Black
-        assert!(!BetType::Black.is_winner(RouletteNumber(1))); // Red
-        assert!(!BetType::Black.is_winner(RouletteNumber(0))); // Green
-    }
-
-    #[test]
-    fn test_bet_type_is_winner_dozen() {
-        assert!(BetType::Dozen(1).is_winner(RouletteNumber(5)));
-        assert!(!BetType::Dozen(1).is_winner(RouletteNumber(15)));
-    }
-
-    #[test]
-    fn test_bet_type_is_winner_split() {
-        assert!(BetType::Split(1, 2).is_winner(RouletteNumber(1)));
-        assert!(BetType::Split(1, 2).is_winner(RouletteNumber(2)));
-        assert!(!BetType::Split(1, 2).is_winner(RouletteNumber(3)));
-    }
-
-    #[test]
-    fn test_bet_type_is_winner_street() {
-        // Street 1 covers 1, 2, 3
-        assert!(BetType::Street(1).is_winner(RouletteNumber(1)));
-        assert!(BetType::Street(1).is_winner(RouletteNumber(2)));
-        assert!(BetType::Street(1).is_winner(RouletteNumber(3)));
-        assert!(!BetType::Street(1).is_winner(RouletteNumber(4)));
-        assert!(!BetType::Street(1).is_winner(RouletteNumber(0)));
-    }
-
-    #[test]
-    fn test_bet_type_is_winner_corner() {
-        assert!(BetType::Corner(1, 2, 4, 5).is_winner(RouletteNumber(1)));
-        assert!(BetType::Corner(1, 2, 4, 5).is_winner(RouletteNumber(2)));
-        assert!(BetType::Corner(1, 2, 4, 5).is_winner(RouletteNumber(4)));
-        assert!(BetType::Corner(1, 2, 4, 5).is_winner(RouletteNumber(5)));
-        assert!(!BetType::Corner(1, 2, 4, 5).is_winner(RouletteNumber(3)));
-    }
-
-    #[test]
-    fn test_bet_type_is_winner_sixline() {
-        // Six Line 1 covers 1-6
-        assert!(BetType::SixLine(1).is_winner(RouletteNumber(1)));
-        assert!(BetType::SixLine(1).is_winner(RouletteNumber(6)));
-        assert!(!BetType::SixLine(1).is_winner(RouletteNumber(7)));
-        assert!(!BetType::SixLine(1).is_winner(RouletteNumber(0)));
-    }
-
-    #[test]
-    fn test_bet_type_is_winner_odd_even() {
-        assert!(BetType::Odd.is_winner(RouletteNumber(1)));
-        assert!(BetType::Odd.is_winner(RouletteNumber(3)));
-        assert!(!BetType::Odd.is_winner(RouletteNumber(2)));
-        assert!(!BetType::Odd.is_winner(RouletteNumber(0)));
-
-        assert!(BetType::Even.is_winner(RouletteNumber(2)));
-        assert!(BetType::Even.is_winner(RouletteNumber(4)));
-        assert!(!BetType::Even.is_winner(RouletteNumber(1)));
-        assert!(!BetType::Even.is_winner(RouletteNumber(0)));
-    }
-
-    #[test]
-    fn test_bet_type_is_winner_low_high() {
-        assert!(BetType::Low.is_winner(RouletteNumber(1)));
-        assert!(BetType::Low.is_winner(RouletteNumber(18)));
-        assert!(!BetType::Low.is_winner(RouletteNumber(19)));
-        assert!(!BetType::Low.is_winner(RouletteNumber(0)));
-
-        assert!(BetType::High.is_winner(RouletteNumber(19)));
-        assert!(BetType::High.is_winner(RouletteNumber(36)));
-        assert!(!BetType::High.is_winner(RouletteNumber(18)));
-        assert!(!BetType::High.is_winner(RouletteNumber(0)));
-    }
-
-    #[test]
-    fn test_bet_type_is_winner_column() {
-        // Column 1: 1,4,7... Column 2: 2,5,8... Column 3: 3,6,9...
-        assert!(BetType::Column(1).is_winner(RouletteNumber(1)));
-        assert!(BetType::Column(1).is_winner(RouletteNumber(4)));
-        assert!(!BetType::Column(1).is_winner(RouletteNumber(2)));
-
-        assert!(BetType::Column(2).is_winner(RouletteNumber(2)));
-        assert!(BetType::Column(2).is_winner(RouletteNumber(5)));
-
-        assert!(BetType::Column(3).is_winner(RouletteNumber(3)));
-        assert!(BetType::Column(3).is_winner(RouletteNumber(6)));
+        // Straight
+        assert!(BetType::new(BetType::STRAIGHT_OFFSET + 17).unwrap().is_winner(red_17));
+        assert!(!BetType::new(BetType::STRAIGHT_OFFSET + 18).unwrap().is_winner(red_17));
+        assert!(BetType::new(BetType::STRAIGHT_OFFSET).unwrap().is_winner(zero)); // Bet on 0
     }
 
     // FairnessProof tests
     #[test]
-    fn test_fairness_proof_generate_and_verify() {
-        let proof = FairnessProof::generate("server_seed_123", "client_seed_456", 1);
-        assert!(!proof.server_seed.is_empty());
-        assert!(!proof.client_seed.is_empty());
+    fn test_fairness_proof_generation() {
+        let proof = FairnessProof::generate("server_seed_123", "client_seed_abc", 1);
         assert!(!proof.combined_hash.is_empty());
         assert!(proof.result <= 36);
-        assert!(proof.verify());
     }
 
     #[test]
-    fn test_fairness_proof_tampered_hash_fails() {
-        let mut proof = FairnessProof::generate("server", "client", 1);
-        proof.combined_hash = "tampered_hash".to_string();
-        assert!(!proof.verify());
+    fn test_fairness_proof_verification() {
+        let proof = FairnessProof::generate("server_seed_123", "client_seed_abc", 1);
+        assert!(proof.verify(), "Generated proof should verify");
     }
 
     #[test]
-    fn test_fairness_proof_tampered_result_fails() {
-        let mut proof = FairnessProof::generate("server", "client", 1);
-        proof.result = (proof.result + 1) % 37;
-        assert!(!proof.verify());
-    }
-
-    #[test]
-    fn test_fairness_proof_hash_seed() {
-        let hash = FairnessProof::hash_seed("test");
-        assert_eq!(hash.len(), 64); // SHA256 produces 64 hex chars
-    }
-
-    #[test]
-    fn test_fairness_proof_consistent() {
-        // Same inputs should produce same outputs
-        let proof1 = FairnessProof::generate("seed1", "seed2", 42);
-        let proof2 = FairnessProof::generate("seed1", "seed2", 42);
-        assert_eq!(proof1.result, proof2.result);
+    fn test_fairness_proof_consistency() {
+        let proof1 = FairnessProof::generate("same_seed", "same_client", 42);
+        let proof2 = FairnessProof::generate("same_seed", "same_client", 42);
         assert_eq!(proof1.combined_hash, proof2.combined_hash);
+        assert_eq!(proof1.result, proof2.result);
+    }
+
+    #[test]
+    fn test_fairness_proof_different_nonce() {
+        let proof1 = FairnessProof::generate("seed", "client", 1);
+        let proof2 = FairnessProof::generate("seed", "client", 2);
+        assert_ne!(proof1.combined_hash, proof2.combined_hash);
     }
 }

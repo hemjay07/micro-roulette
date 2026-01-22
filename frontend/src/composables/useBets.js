@@ -42,11 +42,29 @@ export function useBets() {
    * Place a bet
    */
   function placeBet(betInfo) {
+    // Normalize bet type to lowercase for payout lookup
+    const betType = (betInfo.betType || betInfo.type || '').toLowerCase();
+
+    // Determine secondary identifier based on bet type
+    let number = betInfo.number;
+    let dozen = null;
+    let column = null;
+
+    if (betType === 'dozen') {
+      dozen = betInfo.number;
+      number = null;
+    } else if (betType === 'column') {
+      column = betInfo.number;
+      number = null;
+    }
+
     const bet = {
       id: Date.now() + Math.random(),
-      type: betInfo.type,
+      type: betType,
       amount: selectedChip.value,
-      ...betInfo,
+      number,
+      dozen,
+      column,
     };
 
     // Check if same bet exists, if so, add to it

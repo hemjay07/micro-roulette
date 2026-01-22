@@ -1,3 +1,54 @@
+## Session Log - 2026-01-22 (Session 5)
+
+### Session Start
+- Feature stats at start: 152 passing (43.2%)
+- Continued from session 4
+
+### Work Completed
+
+1. **Feature #15 - Number cells navigate to straight bet** ✅
+   - Fixed BettingBoard.vue hasBetOn() function
+   - Was checking bet.betType but useBets stores as bet.type (lowercase)
+   - Added case-insensitive comparison and proper property checks
+   - Verified yellow highlight ring appears on number cells
+
+2. **Feature #16 - Outside bet buttons place correct bets** ✅
+   - Tested RED, BLACK, ODD, EVEN, 1-18, 19-36 buttons
+   - All buttons correctly place bets with yellow highlight
+
+3. **Feature #17 - Dozen bet buttons place correct bets** ✅
+   - Tested 1st 12, 2nd 12, 3rd 12 buttons
+   - Correct 2:1 payout multiplier (10 chip bet = 30 max win)
+
+4. **Feature #18 - Column bet buttons place correct bets** ✅
+   - Tested all three 2:1 column buttons
+   - Correctly assigns Column(1), Column(2), Column(3) bets
+
+5. **Feature #19 - Chip selector changes selected chip** ✅
+   - Fixed App.vue ChipSelector prop binding
+   - Was using :selected but component expects :selected-chip
+   - "Current: X" now updates correctly when selecting chips
+   - Bet amounts correctly use selected chip value
+
+### Regression Tests
+- Feature #211 (Header displays balance) - PASSED ✅
+- Feature #210 (WinningsPopup displays correctly) - PASSED ✅
+
+### Commits This Session
+- "Fix bet highlight ring on betting board numbers"
+- "Fix ChipSelector prop binding and bet highlight functionality"
+
+### Session End
+- Features passing: 157 (44.6%)
+- Completed 5 features, all verified via browser testing
+
+### Next Session Priorities
+1. Continue with Navigation Integrity features
+2. Test Clear Bets and other action buttons
+3. Continue working through UI verification features
+
+---
+
 ## Session Log - 2026-01-22 (Session 4)
 
 ### Session Start

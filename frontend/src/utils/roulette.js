@@ -165,7 +165,7 @@ export function getPayoutMultiplier(betType) {
 
 /**
  * Check if a bet wins for a given result
- * @param {object} bet - The bet object with type, number, column, dozen
+ * @param {object} bet - The bet object with type, number, column, dozen, sixLineStart
  * @param {number} result - The winning number (0-36)
  * @returns {boolean}
  */
@@ -191,7 +191,26 @@ export function checkBetWin(bet, result) {
       return getDozen(num) === bet.dozen;
     case 'column':
       return getColumn(num) === bet.column;
+    case 'sixline':
+    case 'sixLine':
+      // SixLine covers 6 consecutive numbers starting from bet.sixLineStart
+      // e.g., sixLineStart=1 covers 1,2,3,4,5,6
+      const start = bet.sixLineStart || bet.number;
+      return num >= start && num <= start + 5;
     default:
       return false;
   }
+}
+
+/**
+ * Get valid six-line starting numbers
+ * Six-line bets start at 1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31
+ * @returns {number[]}
+ */
+export function getSixLineStarts() {
+  const starts = [];
+  for (let i = 1; i <= 31; i += 3) {
+    starts.push(i);
+  }
+  return starts;
 }

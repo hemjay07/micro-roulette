@@ -49,12 +49,16 @@ export function useBets() {
     let number = betInfo.number;
     let dozen = null;
     let column = null;
+    let sixLineStart = null;
 
     if (betType === 'dozen') {
       dozen = betInfo.number;
       number = null;
     } else if (betType === 'column') {
       column = betInfo.number;
+      number = null;
+    } else if (betType === 'sixline') {
+      sixLineStart = betInfo.number || betInfo.sixLineStart;
       number = null;
     }
 
@@ -65,6 +69,7 @@ export function useBets() {
       number,
       dozen,
       column,
+      sixLineStart,
     };
 
     // Check if same bet exists, if so, add to it
@@ -72,7 +77,8 @@ export function useBets() {
       b.type === bet.type &&
       b.number === bet.number &&
       b.column === bet.column &&
-      b.dozen === bet.dozen
+      b.dozen === bet.dozen &&
+      b.sixLineStart === bet.sixLineStart
     );
 
     if (existingIndex >= 0) {
@@ -156,6 +162,10 @@ export function useBets() {
           break;
         case 'column':
           betType = { Column: bet.column };
+          break;
+        case 'sixline':
+        case 'sixLine':
+          betType = { SixLine: bet.sixLineStart || bet.number };
           break;
         default:
           betType = { Straight: 0 };

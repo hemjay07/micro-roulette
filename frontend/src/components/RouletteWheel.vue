@@ -107,7 +107,7 @@
       class="absolute inset-0 flex items-center justify-center pointer-events-none"
     >
       <div
-        class="rounded-full w-20 h-20 flex items-center justify-center text-3xl font-bold shadow-lg animate-pulse"
+        class="rounded-full w-20 h-20 flex items-center justify-center text-3xl font-bold shadow-lg animate-pulse border-4 border-white"
         :class="lastResultClass"
       >
         {{ lastResult }}

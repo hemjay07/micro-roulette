@@ -111,6 +111,16 @@ impl Contract for RouletteContract {
                 // This is a confirmation message - the bet is already in state
                 // from the original PlaceBet operation
             }
+            Message::BetRejected { player, reason, attempted_amount } => {
+                // Bet was rejected - notify player
+                log::warn!(
+                    "BetRejected: player={:?}, reason={}, amount={:?}",
+                    player, reason, attempted_amount
+                );
+
+                // The bet was rejected, no state change needed
+                // The frontend should display the rejection reason to the user
+            }
             Message::Payout { player, spin_id, amount } => {
                 // Credit winnings to the player
                 self.credit(&player, amount).await;

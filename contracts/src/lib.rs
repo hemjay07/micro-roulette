@@ -68,6 +68,12 @@ pub enum Message {
         amount: Amount,
         round_total: Amount,
     },
+    /// Bet was rejected
+    BetRejected {
+        player: Owner,
+        reason: String,
+        attempted_amount: Amount,
+    },
     /// Payout notification
     Payout {
         player: Owner,

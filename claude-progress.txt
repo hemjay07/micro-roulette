@@ -1,3 +1,79 @@
+## Session Log - 2026-01-22 (Session 8)
+
+### Session Start
+- Feature stats at start: 168 passing (47.7%)
+- Continued from session 7
+
+### Regression Tests
+- Feature #338 (Environment variables propagated) - PASSED ✅
+- Feature #260 (GraphQL platformStats query) - PASSED ✅
+
+### Work Completed
+
+1. **Feature #41 - App ID matches deployed contract** ⏳
+   - BLOCKED: Requires blockchain deployment
+   - Added chainId GraphQL query to service.rs
+   - Added config GraphQL query to service.rs
+   - Created intervention #68 for deployment
+
+2. **Feature #42 - GraphQL chainId returns real chain ID** ⏳
+   - BLOCKED: Requires blockchain deployment
+   - Implemented chain_id query in service.rs
+   - Created intervention #69 for verification
+
+3. **Feature #43 - Config values match instantiation** ⏳
+   - BLOCKED: Requires blockchain deployment
+   - Implemented config query with minBet, maxBet, maxTotalBet, houseEdgeBps
+   - Created intervention #70 for verification
+
+4. **Feature #44 - Spin history limited to 20 entries** ⏳
+   - BLOCKED: Requires blockchain deployment
+   - Verified contract code correctly limits history to 20
+   - Created intervention #71 for verification
+
+5. **Feature #48 - Complete straight bet workflow** ✅
+   - Connected with funded wallet (1000 chips)
+   - Selected chip value 10, clicked number 17
+   - Verified Total Bet: 10 chips, Max Win: 360 chips
+   - Spin result: 18 red (lost)
+   - Balance correctly decreased to 990 chips
+
+6. **Feature #49 - Complete outside bet workflow** ✅
+   - Selected chip value 100, placed bet on RED
+   - Verified Total Bet: 100 chips, Max Win: 200 chips
+   - Spin result: 7 red (won!)
+   - Win popup appeared with +200 chips
+   - Balance correctly increased to 1090 chips
+
+7. **Feature #50 - Complete dozen bet workflow** ✅
+   - Selected chip value 100, placed bet on "1st 12"
+   - Verified Total Bet: 100 chips, Max Win: 300 chips (2:1 payout)
+   - Spin result: 30 red (lost - 30 is in 3rd dozen)
+   - Balance correctly decreased to 990 chips
+
+### Code Changes
+- contracts/src/service.rs: Added chainId and config GraphQL queries
+  - Store runtime in Arc for lifetime management
+  - chain_id query returns runtime.chain_id().to_string()
+  - config query returns minBet, maxBet, maxTotalBet, houseEdgeBps
+
+### Commits This Session
+- "Add chainId GraphQL query to service"
+- "Add config GraphQL query to service"
+
+### Session End
+- Features passing: 171 (48.6%)
+- Features blocked: 5 (waiting for blockchain deployment)
+- Completed 3 workflow features via browser testing
+- Added 2 critical GraphQL queries (chainId, config)
+
+### Next Session Priorities
+1. Complete deployment intervention to unblock blockchain features
+2. Continue with remaining Workflow Completeness features
+3. Test column bet workflow
+
+---
+
 ## Session Log - 2026-01-22 (Session 7)
 
 ### Session Start

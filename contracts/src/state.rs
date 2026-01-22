@@ -1,7 +1,7 @@
 // src/state.rs
 //! State management using Linera Views
 
-use crate::types::{TableStatus, PlayerBets, SpinResult};
+use crate::types::{TableStatus, PlayerBets, SpinResult, PlayerStats};
 use linera_sdk::linera_base_types::{AccountOwner, Amount};
 use linera_sdk::views::{MapView, QueueView, RegisterView, RootView, ViewStorageContext};
 
@@ -55,4 +55,9 @@ pub struct RouletteState {
 
     /// Last spin result number (0-36)
     pub last_result: RegisterView<u8>,
+
+    // ========== Player Statistics ==========
+
+    /// Per-player statistics
+    pub player_stats: MapView<Owner, PlayerStats>,
 }

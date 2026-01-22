@@ -341,6 +341,74 @@ pub struct SpinResult {
     pub total_bets: Amount,
     /// Total amount paid out
     pub total_payout: Amount,
+    /// Number of players who placed bets this spin
+    pub player_count: u32,
+}
+
+// ============================================================================
+// PLAYER STATS
+// ============================================================================
+
+/// Statistics for a player
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct PlayerStats {
+    /// Total bets placed
+    pub total_bets: u64,
+    /// Total amount wagered (all time)
+    pub total_wagered: Amount,
+    /// Total amount won (all time)
+    pub total_won: Amount,
+    /// Biggest single win
+    pub biggest_win: Amount,
+    /// Current win/loss streak (positive = wins, negative = losses)
+    pub current_streak: i32,
+    /// Best winning streak ever
+    pub best_streak: i32,
+}
+
+impl PlayerStats {
+    /// Create new empty stats
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Update stats after a win
+    pub fn record_win(&mut self, amount: Amount) {
+        self.total_won = self.total_won.saturating_add(amount);
+
+        // Update biggest win if this is larger
+        if amount > self.biggest_win {
+            self.biggest_win = amount;
+        }
+
+        // Update streak
+        if self.current_streak >= 0 {
+            self.current_streak += 1;
+        } else {
+            self.current_streak = 1;
+        }
+
+        // Update best streak
+        if self.current_streak > self.best_streak {
+            self.best_streak = self.current_streak;
+        }
+    }
+
+    /// Update stats after a loss
+    pub fn record_loss(&mut self) {
+        // Update streak
+        if self.current_streak <= 0 {
+            self.current_streak -= 1;
+        } else {
+            self.current_streak = -1;
+        }
+    }
+
+    /// Record a bet placed
+    pub fn record_bet(&mut self, amount: Amount) {
+        self.total_bets += 1;
+        self.total_wagered = self.total_wagered.saturating_add(amount);
+    }
 }
 
 // ============================================================================

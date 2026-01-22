@@ -10,7 +10,7 @@ use linera_sdk::{
 };
 use micro_roulette::{
     InstantiationArgument, Message, Operation, RouletteAbi,
-    Bet, BetType, FairnessProof, PlayerBets, RouletteNumber, SpinResult, TableStatus,
+    Bet, BetType, FairnessProof, PlayerBets, PlayerStats, RouletteNumber, SpinResult, TableStatus,
 };
 use micro_roulette::state::{Owner, RouletteState};
 
@@ -223,6 +223,16 @@ impl RouletteContract {
         let current_round_total = *self.state.round_total.get();
         self.state.round_total.set(current_round_total.saturating_add(amount));
 
+        // Update player stats
+        let mut stats = self.state.player_stats
+            .get(&player)
+            .await
+            .ok()
+            .flatten()
+            .unwrap_or_else(PlayerStats::new);
+        stats.record_bet(amount);
+        let _ = self.state.player_stats.insert(&player, stats);
+
         log::info!("Player {:?} placed bet: type={}, amount={:?}", player, bet_type, amount);
     }
 
@@ -291,17 +301,37 @@ impl RouletteContract {
             .map(|iter| iter.collect())
             .unwrap_or_default();
 
+        // Count players before iterating
+        let player_count = player_keys.len() as u32;
+
         for player in player_keys {
             if let Ok(Some(player_bets)) = self.state.current_bets.get(&player).await {
                 let winnings = player_bets.calculate_winnings(result);
+
+                // Update player stats
+                let mut stats = self.state.player_stats
+                    .get(&player)
+                    .await
+                    .ok()
+                    .flatten()
+                    .unwrap_or_else(PlayerStats::new);
 
                 if winnings > Amount::ZERO {
                     // Credit winnings to player
                     self.credit(&player, winnings).await;
                     total_payout = total_payout.saturating_add(winnings);
 
+                    // Record win in stats
+                    stats.record_win(winnings);
+
                     log::info!("Player {:?} won {:?}", player, winnings);
+                } else {
+                    // Record loss in stats
+                    stats.record_loss();
                 }
+
+                // Save updated stats
+                let _ = self.state.player_stats.insert(&player, stats);
             }
         }
 
@@ -312,6 +342,7 @@ impl RouletteContract {
             seed_hash: proof.combined_hash.clone(),
             total_bets: *self.state.round_total.get(),
             total_payout,
+            player_count,
         };
 
         // Add to history (keep last 20)

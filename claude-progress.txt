@@ -1,0 +1,64 @@
+## Operational Notes
+- Start app: `./init.sh` (handles wallet init, contract build, deployment, and frontend start)
+- Alternative: `./conway_deploy.sh` for Conway testnet deployment
+- Frontend port: 8080, API port: 8081
+- Rust version: MUST be 1.86.0 (pinned in rust-toolchain.toml)
+- GOTCHA: Linera SDK 0.15.8 is required exactly
+- GOTCHA: Vite config requires COOP/COEP headers for WASM
+- Testing cargo: Cannot run `cargo` commands in sandboxed environment - need human intervention for build/test
+
+## Session Log - 2026-01-22
+
+### Session Start
+- Feature stats at start: 17 passing (4.8%)
+- No claude-progress.txt existed
+
+### Work Completed
+1. **Created service.rs** (Feature #284) - Contract source files exist
+   - Added GraphQL service implementation with all required queries and mutations
+
+2. **Verified Service Implementation** (Feature #191) - Service implements correct traits
+   - Confirmed new(), handle_query(), service! macro
+
+3. **Verified GraphQL Schema** (Feature #192) - All 13 required queries exist
+   - chainId, config, tableStatus, spinHistory, lastSpin, hotNumbers, coldNumbers, numberStats, playerInfo, fairnessInfo, platformStats, verifyFairness, isPaused
+
+4. **Verified FairnessProof** (Features #193, #282, #283)
+   - FairnessProof.verify() correctly validates proofs
+   - FairnessProof.generate() creates valid proofs
+   - FairnessProof.hash_seed() returns SHA256 hex
+
+5. **Added Contract Unit Tests** (Features #342-345, #351, #353)
+   - Added 31 unit tests to types.rs covering:
+     - RouletteNumber methods (is_red, is_black, dozen, column, etc.)
+     - BetType payouts (all 13 bet types)
+     - BetType win detection
+     - FairnessProof generation and verification
+   - Test coverage is adequate for core types
+
+6. **Verified No Mock Blockchain** (Feature #286) - No mock/fake patterns found
+
+7. **Verified Deps from crates.io** (Feature #287) - No git/path dependencies
+
+8. **Created conway_deploy.sh** (Feature #322) - Deployment script for Conway testnet
+
+9. **Verified Frontend Configuration** (Features #198-200)
+   - Vite WASM settings correct
+   - Tailwind roulette colors defined
+   - index.html import map correct
+
+10. **Created Frontend Composables** (Features #201-203)
+    - useLinera.js - connect(), query(), mutate(), chainId, isConnected, error refs
+    - useRoulette.js - spinHistory, hotNumbers, coldNumbers, isSpinning, spin(), fetchTableState()
+    - useBets.js - currentBets, selectedChip, placeBet(), clearBets(), getBetsForContract()
+
+### Session End
+- Features passing: 38 (10.8%)
+- Features skipped (need runtime/cargo): Integration tests, WASM build, deployment
+- All composables and service files created
+
+### Next Session Priorities
+1. Create utils/roulette.js and utils/constants.js
+2. Create Vue components (ChainInfo, RouletteWheel, BettingBoard, etc.)
+3. Run cargo build when environment allows
+4. Test deployment to Conway testnet

@@ -100,7 +100,8 @@
 
       <!-- Fairness Verifier -->
       <FairnessVerifier
-        :proof="lastSpinProof"
+        :next-seed-hash="lastSpinProof?.nextSeedHash"
+        :current-seed="lastSpinProof?.currentSeed"
         @verify="handleVerifyFairness"
         class="mt-8"
       />

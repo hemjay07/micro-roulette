@@ -42,6 +42,7 @@ impl Service for RouletteService {
         let total_volume = *self.state.total_volume.get();
         let total_payouts = *self.state.total_payouts.get();
         let total_spins = *self.state.total_spins.get();
+        let paused = *self.state.paused.get();
 
         // Fairness data
         let server_seed_hash = self.state.server_seed_hash.get().clone();
@@ -62,7 +63,8 @@ impl Service for RouletteService {
                 house_edge_bps,
                 spin_number,
                 status: status_str.to_string(),
-                is_betting_open: status == TableStatus::Open,
+                is_betting_open: status == TableStatus::Open && !paused,
+                is_paused: paused,
                 round_total: round_total.to_string(),
                 total_volume: total_volume.to_string(),
                 total_payouts: total_payouts.to_string(),
@@ -103,6 +105,7 @@ struct QueryRoot {
     spin_number: u64,
     status: String,
     is_betting_open: bool,
+    is_paused: bool,
     round_total: String,
     total_volume: String,
     total_payouts: String,
@@ -143,6 +146,11 @@ impl QueryRoot {
     /// Check if table is currently accepting bets
     async fn is_betting_open(&self) -> bool {
         self.is_betting_open
+    }
+
+    /// Check if platform is paused
+    async fn is_paused(&self) -> bool {
+        self.is_paused
     }
 
     /// Get house edge in basis points

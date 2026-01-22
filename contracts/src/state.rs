@@ -12,8 +12,26 @@ pub type Owner = AccountOwner;
 #[derive(RootView)]
 #[view(context = ViewStorageContext)]
 pub struct RouletteState {
+    /// Admin account that can perform privileged operations
+    pub admin: RegisterView<Owner>,
+
+    /// Whether the contract is paused
+    pub paused: RegisterView<bool>,
+
+    /// Treasury balance for house
+    pub treasury: RegisterView<Amount>,
+
     /// House edge in basis points (270 = 2.7%)
     pub house_edge_bps: RegisterView<u16>,
+
+    /// Minimum bet amount
+    pub min_bet: RegisterView<Amount>,
+
+    /// Maximum bet amount
+    pub max_bet: RegisterView<Amount>,
+
+    /// Maximum total bets per player per spin
+    pub max_total_bet: RegisterView<Amount>,
 
     /// Current spin number
     pub spin_number: RegisterView<u64>,

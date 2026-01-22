@@ -48,14 +48,23 @@ impl Contract for RouletteContract {
 
     /// Initialize the application
     async fn instantiate(&mut self, argument: Self::InstantiationArgument) {
+        // Set the creator as admin
+        let admin = self.signer();
+        self.state.admin.set(admin);
+        self.state.paused.set(false);
+        self.state.treasury.set(Amount::ZERO);
         self.state.house_edge_bps.set(argument.house_edge_bps);
+        // Default min_bet: 1 token, max_bet: 1000 tokens, max_total_bet: 10000 tokens
+        self.state.min_bet.set(Amount::from_tokens(1));
+        self.state.max_bet.set(Amount::from_tokens(1000));
+        self.state.max_total_bet.set(Amount::from_tokens(10000));
         self.state.spin_number.set(1);
         self.state.status.set(TableStatus::Open);
         self.state.round_total.set(Amount::ZERO);
         self.state.total_volume.set(Amount::ZERO);
         self.state.total_payouts.set(Amount::ZERO);
         self.state.total_spins.set(0);
-        log::info!("MicroRoulette initialized with house edge: {} bps", argument.house_edge_bps);
+        log::info!("MicroRoulette initialized with house edge: {} bps, admin: {:?}", argument.house_edge_bps, admin);
     }
 
     /// Execute an operation
@@ -84,6 +93,27 @@ impl Contract for RouletteContract {
             }
             Operation::ClearBets => {
                 self.clear_bets().await;
+            }
+            // ========== Admin Operations ==========
+            Operation::UpdateSettings { house_edge_bps, min_bet, max_bet } => {
+                self.require_admin().await;
+                self.update_settings(house_edge_bps, min_bet, max_bet).await;
+            }
+            Operation::SetPaused { paused } => {
+                self.require_admin().await;
+                self.set_paused(paused).await;
+            }
+            Operation::WithdrawTreasury { amount } => {
+                self.require_admin().await;
+                self.withdraw_treasury(amount).await;
+            }
+            Operation::SetServerSeedHash { hash } => {
+                self.require_admin().await;
+                self.set_server_seed_hash(hash).await;
+            }
+            Operation::CloseTable => {
+                self.require_admin().await;
+                self.close_table().await;
             }
         }
     }
@@ -185,6 +215,10 @@ impl RouletteContract {
     }
 
     async fn place_bet(&mut self, bet_type: u8, amount: Amount) {
+        // Check if platform is paused
+        let paused = *self.state.paused.get();
+        assert!(!paused, "Platform is paused");
+
         // Check table is accepting bets
         let status = *self.state.status.get();
         assert!(status == TableStatus::Open, "Table is not accepting bets (status: {:?})", status);
@@ -195,6 +229,25 @@ impl RouletteContract {
         let bt = BetType::new(bet_type).expect("Invalid bet type");
         assert!(bt.is_valid(), "Invalid bet type");
 
+        // Check bet amount is within limits
+        let min_bet = *self.state.min_bet.get();
+        let max_bet = *self.state.max_bet.get();
+        assert!(amount >= min_bet, "Bet amount too low");
+        assert!(amount <= max_bet, "Bet amount too high");
+
+        // Get existing bets or create new
+        let mut player_bets = self.state.current_bets
+            .get(&player)
+            .await
+            .ok()
+            .flatten()
+            .unwrap_or_else(PlayerBets::new);
+
+        // Check total bet limit
+        let max_total_bet = *self.state.max_total_bet.get();
+        let new_total = player_bets.total_amount.saturating_add(amount);
+        assert!(new_total <= max_total_bet, "Total bets exceed maximum");
+
         // Check player has sufficient balance
         let balance = self.get_balance(&player).await;
         assert!(balance >= amount, "Insufficient balance");
@@ -204,14 +257,6 @@ impl RouletteContract {
 
         // Debit from player balance
         self.debit(&player, amount).await;
-
-        // Get existing bets or create new
-        let mut player_bets = self.state.current_bets
-            .get(&player)
-            .await
-            .ok()
-            .flatten()
-            .unwrap_or_else(PlayerBets::new);
 
         // Add bet
         player_bets.add_bet(bet);
@@ -433,5 +478,64 @@ impl RouletteContract {
         self.state.status.set(TableStatus::Open);
 
         log::info!("New round opened, spin #{}", self.state.spin_number.get());
+    }
+
+    // ========== ADMIN METHODS ==========
+
+    /// Check if the caller is the admin, panics if not
+    async fn require_admin(&self) {
+        let caller = self.signer();
+        let admin = *self.state.admin.get();
+        assert!(caller == admin, "Unauthorized: admin required");
+    }
+
+    /// Update game settings (admin only)
+    async fn update_settings(&mut self, house_edge_bps: Option<u16>, min_bet: Option<Amount>, max_bet: Option<Amount>) {
+        if let Some(edge) = house_edge_bps {
+            assert!(edge <= 1000, "House edge cannot exceed 10%");
+            self.state.house_edge_bps.set(edge);
+            log::info!("Admin updated house edge to {} bps", edge);
+        }
+        if let Some(min) = min_bet {
+            self.state.min_bet.set(min);
+            log::info!("Admin updated min_bet to {:?}", min);
+        }
+        if let Some(max) = max_bet {
+            self.state.max_bet.set(max);
+            log::info!("Admin updated max_bet to {:?}", max);
+        }
+    }
+
+    /// Pause or unpause the contract (admin only)
+    async fn set_paused(&mut self, paused: bool) {
+        self.state.paused.set(paused);
+        if paused {
+            self.state.status.set(TableStatus::Closed);
+            log::info!("Admin paused the contract");
+        } else {
+            self.state.status.set(TableStatus::Open);
+            log::info!("Admin unpaused the contract");
+        }
+    }
+
+    /// Withdraw from treasury (admin only)
+    async fn withdraw_treasury(&mut self, amount: Amount) {
+        let treasury = *self.state.treasury.get();
+        assert!(treasury >= amount, "Insufficient treasury balance");
+        self.state.treasury.set(treasury.saturating_sub(amount));
+        log::info!("Admin withdrew {:?} from treasury", amount);
+    }
+
+    /// Set the server seed hash for next spin (admin only)
+    async fn set_server_seed_hash(&mut self, hash: String) {
+        self.state.server_seed_hash.set(hash.clone());
+        log::info!("Admin set server seed hash: {}...", &hash[..8.min(hash.len())]);
+    }
+
+    /// Close the table permanently (admin only)
+    async fn close_table(&mut self) {
+        self.state.status.set(TableStatus::Closed);
+        self.state.paused.set(true);
+        log::info!("Admin closed the table permanently");
     }
 }

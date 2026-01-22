@@ -1,0 +1,32 @@
+# Rust build artifacts
+target/
+contracts/target/
+
+# Node.js
+node_modules/
+frontend/node_modules/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# Local files
+*.log
+*.db
+.env
+.env.*
+
+# Documentation
+*.md
+!README.md
+
+# Feature database
+features.db
+
+# Claude files
+.claude/
+claude-progress.txt

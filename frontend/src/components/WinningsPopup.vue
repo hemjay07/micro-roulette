@@ -4,7 +4,8 @@
     <Transition name="popup">
       <div
         v-if="show"
-        class="fixed inset-0 z-50 flex items-center justify-center"
+        class="fixed inset-0 flex items-center justify-center"
+        style="z-index: 200"
       >
         <!-- Backdrop -->
         <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="handleClose"></div>

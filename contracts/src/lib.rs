@@ -49,6 +49,23 @@ pub enum Operation {
     OpenNewRound,
     /// Clear all current bets
     ClearBets,
+
+    // ========== Admin Operations ==========
+
+    /// Update game settings (admin only)
+    UpdateSettings {
+        house_edge_bps: Option<u16>,
+        min_bet: Option<Amount>,
+        max_bet: Option<Amount>,
+    },
+    /// Pause/unpause the contract (admin only)
+    SetPaused { paused: bool },
+    /// Withdraw from treasury (admin only)
+    WithdrawTreasury { amount: Amount },
+    /// Set the next server seed hash (admin only)
+    SetServerSeedHash { hash: String },
+    /// Close the table permanently (admin only)
+    CloseTable,
 }
 
 /// Messages sent between chains

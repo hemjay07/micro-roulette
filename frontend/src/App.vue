@@ -21,7 +21,7 @@
         <!-- Left column: History & Stats -->
         <div class="space-y-6">
           <SpinHistory :history="spinHistory" />
-          <HotColdNumbers :hot="hotNumbers" :cold="coldNumbers" />
+          <HotColdNumbers :hot-numbers="hotNumbers" :cold-numbers="coldNumbers" />
         </div>
 
         <!-- Center column: Wheel & Board -->

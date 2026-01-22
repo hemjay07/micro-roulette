@@ -47,14 +47,32 @@
    - Triggered another win (20 black)
    - Closed by clicking dark backdrop overlay ✅
 
+7. **Feature #36 - Player balance decreases on bet** ✅
+   - Started with 910 chips balance
+   - Placed 100 chip bet on BLACK
+   - Spin result: 33 black (won)
+   - Balance correctly updated: 910 - 100 + 200 = 1010 chips
+   - Balance subtraction and win addition working correctly
+
+### Features Skipped (Require Blockchain Deployment)
+- Features #26-35: Real Data Verification features require deployed contract
+  - Spin result from real blockchain
+  - Player balance updates from chain
+  - Spin history persistence across refresh
+  - Hot/cold numbers reflect real statistics
+  - Volume/payout/spin count tracking
+  - Treasury balance updates
+- These features moved to end of priority queue
+
 ### Session End
-- Features passing: 163 (46.3%)
-- Completed 6 features, all verified via browser testing
+- Features passing: 164 (46.6%)
+- Completed 7 features, all verified via browser testing
+- Skipped 10 blockchain-specific features (require deployment)
 
 ### Next Session Priorities
-1. Continue with remaining Navigation Integrity features
-2. Test Deposit/Withdraw buttons
-3. Continue working through UI verification features
+1. Deploy contract to Conway testnet to verify blockchain features
+2. Continue with remaining UI verification features
+3. Test Deposit/Withdraw modal functionality
 
 ---
 

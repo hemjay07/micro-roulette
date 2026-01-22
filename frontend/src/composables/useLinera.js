@@ -7,6 +7,7 @@ const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true';
 // Demo mode state
 let demoLastSpinResult = null;
 let demoSpinHistory = [];
+let demoNumberStats = {}; // Track count for each number 0-36
 
 export function useLinera() {
   const chainId = ref(import.meta.env.VITE_CHAIN_ID || null);
@@ -135,6 +136,9 @@ export function useLinera() {
         });
         if (demoSpinHistory.length > 20) demoSpinHistory.pop();
 
+        // Track number stats
+        demoNumberStats[demoLastSpinResult] = (demoNumberStats[demoLastSpinResult] || 0) + 1;
+
         console.log('Demo spin result:', demoLastSpinResult, resultColor);
       }
 
@@ -184,6 +188,34 @@ export function useLinera() {
 }
 
 /**
+ * Get hot numbers (most frequent) from demo stats
+ */
+function getHotNumbers() {
+  const entries = Object.entries(demoNumberStats);
+  if (entries.length === 0) return [];
+
+  // Sort by count descending and take top 5
+  return entries
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([num]) => parseInt(num));
+}
+
+/**
+ * Get cold numbers (least frequent) from demo stats
+ */
+function getColdNumbers() {
+  const entries = Object.entries(demoNumberStats);
+  if (entries.length === 0) return [];
+
+  // Sort by count ascending and take bottom 5
+  return entries
+    .sort((a, b) => a[1] - b[1])
+    .slice(0, 5)
+    .map(([num]) => parseInt(num));
+}
+
+/**
  * Mock query responses for demo mode
  */
 function getMockQueryResponse(query) {
@@ -216,8 +248,9 @@ function getMockQueryResponse(query) {
         houseEdgeBps: 270,
       },
       spinHistory: demoSpinHistory,
-      hotNumbers: [],
-      coldNumbers: [],
+      hotNumbers: getHotNumbers(),
+      coldNumbers: getColdNumbers(),
+      numberStats: demoNumberStats,
       lastSpin: lastSpin,
       fairnessInfo: {
         nextSeedHash: 'a1b2c3d4e5f6...',

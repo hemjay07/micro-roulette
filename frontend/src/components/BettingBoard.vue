@@ -240,9 +240,20 @@ function placeBet(betType, number) {
 
 // Check if there's a bet on this position
 function hasBetOn(betType, number) {
-  return props.currentBets.some(
-    bet => bet.betType === betType && bet.number === number
-  );
+  const normalizedType = betType.toLowerCase();
+  return props.currentBets.some(bet => {
+    // Handle different bet types
+    if (normalizedType === 'straight') {
+      return bet.type === 'straight' && bet.number === number;
+    } else if (normalizedType === 'dozen') {
+      return bet.type === 'dozen' && bet.dozen === number;
+    } else if (normalizedType === 'column') {
+      return bet.type === 'column' && bet.column === number;
+    } else {
+      // For outside bets (red, black, odd, even, low, high)
+      return bet.type === normalizedType;
+    }
+  });
 }
 
 // Format bet amount for display

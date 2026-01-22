@@ -126,6 +126,11 @@ impl Contract for RouletteContract {
                 self.credit(&player, amount).await;
                 log::info!("Payout: player={:?}, spin_id={}, amount={:?}", player, spin_id, amount);
             }
+            Message::Refund { player, reason, amount } => {
+                // Refund bet amount to the player
+                self.credit(&player, amount).await;
+                log::info!("Refund: player={:?}, reason={}, amount={:?}", player, reason, amount);
+            }
         }
     }
 }

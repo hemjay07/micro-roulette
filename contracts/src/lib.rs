@@ -80,6 +80,12 @@ pub enum Message {
         spin_id: u64,
         amount: Amount,
     },
+    /// Refund notification
+    Refund {
+        player: Owner,
+        reason: String,
+        amount: Amount,
+    },
 }
 
 /// Arguments for instantiating the application

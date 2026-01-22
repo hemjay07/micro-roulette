@@ -4,7 +4,7 @@
     <h3 class="text-sm font-medium text-gray-400 mb-3">Recent Spins</h3>
 
     <!-- Empty state -->
-    <div v-if="!history || history.length === 0" class="text-center py-6">
+    <div v-if="historyData.length === 0" class="text-center py-6">
       <svg class="w-12 h-12 mx-auto text-gray-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
@@ -15,7 +15,7 @@
     <!-- History list -->
     <div v-else class="flex flex-wrap gap-2">
       <div
-        v-for="spin in history"
+        v-for="spin in historyData"
         :key="spin.spinId"
         class="spin-result group relative"
         :class="getResultColorClass(spin.result)"
@@ -36,7 +36,7 @@
     </div>
 
     <!-- Statistics -->
-    <div v-if="history && history.length > 0" class="mt-4 pt-3 border-t border-gray-800">
+    <div v-if="historyData.length > 0" class="mt-4 pt-3 border-t border-gray-800">
       <div class="grid grid-cols-3 gap-2 text-center text-xs">
         <div>
           <div class="text-gray-500">Red</div>
@@ -56,7 +56,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, toRef } from 'vue';
 import { getNumberColor } from '../utils/roulette.js';
 
 const props = defineProps({
@@ -65,6 +65,9 @@ const props = defineProps({
     default: () => []
   }
 });
+
+// Use toRef to maintain reactivity from props
+const historyData = toRef(props, 'history');
 
 // Get CSS class based on result color
 function getResultColorClass(result) {
@@ -76,15 +79,15 @@ function getResultColorClass(result) {
 
 // Count statistics
 const redCount = computed(() => {
-  return props.history.filter(s => getNumberColor(s.result) === 'red').length;
+  return historyData.value.filter(s => getNumberColor(s.result) === 'red').length;
 });
 
 const blackCount = computed(() => {
-  return props.history.filter(s => getNumberColor(s.result) === 'black').length;
+  return historyData.value.filter(s => getNumberColor(s.result) === 'black').length;
 });
 
 const greenCount = computed(() => {
-  return props.history.filter(s => getNumberColor(s.result) === 'green').length;
+  return historyData.value.filter(s => getNumberColor(s.result) === 'green').length;
 });
 </script>
 

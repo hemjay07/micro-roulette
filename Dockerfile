@@ -1,25 +1,8 @@
-FROM rust:1.86.0 as builder
+# MicroRoulette - Provably Fair Linera Roulette
+# Uses pre-built base image for fast startup (no 2+ hour build!)
+# Base image: mujeebmuzaffar/linera-base:0.15.8
 
-# Install dependencies
-RUN apt-get update && apt-get install -y \
-    protobuf-compiler \
-    cmake \
-    clang \
-    openssl \
-    libssl-dev \
-    pkg-config \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Rust WASM target
-RUN rustup target add wasm32-unknown-unknown
-
-# Install Linera tools
-RUN cargo install linera-service@0.15.8 --locked
-RUN cargo install linera-storage-service@0.15.8 --locked
-
-# Install Node.js
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs
+FROM mujeebmuzaffar/linera-base:0.15.8 as builder
 
 WORKDIR /app
 COPY . .

@@ -64,7 +64,6 @@ export function useRoulette(query, mutate) {
 
       if (result.data) {
         const data = result.data;
-        console.log('fetchTableState result:', JSON.stringify(data.lastSpin));
 
         if (data.tableStatus) {
           tableStatus.value = data.tableStatus.status;

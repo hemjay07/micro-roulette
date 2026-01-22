@@ -1,0 +1,34 @@
+# Base image with Linera tools pre-built
+# This image takes 1-2+ hours to build but only needs to be built once
+# Push to Docker Hub: docker push mujeebmuzaffar/linera-base:0.15.8
+
+FROM rust:1.86.0
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    protobuf-compiler \
+    cmake \
+    clang \
+    openssl \
+    libssl-dev \
+    pkg-config \
+    ca-certificates \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Rust WASM target
+RUN rustup target add wasm32-unknown-unknown
+
+# Install Linera tools (this is the slow part - ~1-2 hours)
+RUN cargo install linera-service@0.15.8 --locked
+RUN cargo install linera-storage-service@0.15.8 --locked
+
+# Install Node.js 20
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs
+
+# Verify installations
+RUN linera --version && node --version && npm --version
+
+# Set working directory
+WORKDIR /app

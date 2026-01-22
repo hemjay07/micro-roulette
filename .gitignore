@@ -1,0 +1,53 @@
+# Rust
+/contracts/target/
+**/*.rs.bk
+Cargo.lock
+
+# Node
+/frontend/node_modules/
+/frontend/dist/
+/frontend/.vite/
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+.server_seed
+.deployment
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linera
+*.wasm.d
+/linera-*
+
+# Build outputs
+/build/
+/dist/
+
+# Test and coverage
+/coverage/
+*.lcov
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Feature database (generated at runtime)
+# Keep features.db in git for tracking features
+# features.db
+
+# Claude settings (local)
+.claude_settings.json

@@ -1,0 +1,48 @@
+/* src/style.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Roulette-specific styles */
+.roulette-number {
+  @apply w-10 h-8 flex items-center justify-center font-bold rounded cursor-pointer transition-all;
+}
+
+.roulette-number:hover {
+  @apply opacity-80 transform scale-105;
+}
+
+.roulette-number.red {
+  @apply bg-roulette-red text-white;
+}
+
+.roulette-number.black {
+  @apply bg-roulette-black text-white;
+}
+
+.roulette-number.green {
+  @apply bg-roulette-green text-white;
+}
+
+.chip {
+  @apply w-12 h-12 rounded-full flex items-center justify-center font-bold cursor-pointer transition-all;
+  @apply border-4 border-white shadow-lg;
+}
+
+.chip:hover {
+  @apply transform scale-110;
+}
+
+.chip.selected {
+  @apply ring-4 ring-yellow-400;
+}
+
+/* Wheel animation */
+@keyframes wheel-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(var(--target-rotation)); }
+}
+
+.wheel-spinning {
+  animation: wheel-spin 5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}

@@ -1,3 +1,139 @@
+## Session Log - 2026-01-22 (Session 4)
+
+### Session Start
+- Feature stats at start: 75 passing (21.3%)
+- Continued from session 3
+
+### Work Completed
+
+1. **Verified bet payouts** (Features #236-243, #248-250)
+   - Dozen bet 2:1 (#236)
+   - Column bet 2:1 (#237)
+   - Red bet 1:1 (#238)
+   - Black bet 1:1 (#239)
+   - Odd bet 1:1 (#240)
+   - Even bet 1:1 (#241)
+   - Low bet 1:1 (#242)
+   - High bet 1:1 (#243)
+   - Zero only wins straight (#248)
+   - Payout includes stake (#249)
+   - Multiple winners paid (#250)
+
+2. **Verified README architecture** (#325)
+   - On-chain vs off-chain section documented
+   - Lists what runs on blockchain vs frontend
+
+3. **Verified App ID display** (#330)
+   - ChainInfo.vue displays App ID
+   - Truncates long IDs for display
+
+4. **Verified Linera integration** (#331)
+   - linera-views: MapView, RegisterView, QueueView
+   - linera-web: @linera/client v0.15.8
+   - GraphQL: async-graphql service
+   - Cross-chain messages implemented
+
+5. **Verified GraphQL operations** (#252-260)
+   - PlaceBet operation (#252)
+   - Spin operation (#253)
+   - Deposit operation (#254)
+   - Withdraw operation (#255)
+   - ClearBets operation (#256)
+   - DoubleBets frontend function (#257)
+   - lastSpin query (#258)
+   - platformStats query (#260)
+
+6. **Verified state machine** (#289-292, #335-337)
+   - Invalid state transitions rejected (#289)
+   - Betting deadline enforced (#290)
+   - TableStatus::PayingOut state (#270)
+   - Concurrent spin prevention (#335)
+   - Race condition handling (#336, #337)
+
+7. **Verified fairness mechanism** (#244-246)
+   - Commit-reveal hash commitment (#244)
+   - Hash verification (#245)
+   - SHA256 mod 37 derivation (#246)
+
+8. **Verified UI components** (#297-299, #303, #308, #314, #319)
+   - Bet chip visualization (#297)
+   - Ball animation (#298)
+   - Winning highlight (#299)
+   - Balance query (#303)
+   - Error tracking (#308)
+   - Header deposit/withdraw (#314)
+   - Confetti animation (#319)
+
+### Session End
+- Features passing: 128 (36.4%)
+- Verified 53 features through code analysis
+- Skipped features requiring: video recording, external services, advanced UI
+
+### Next Session Priorities
+1. Continue verifying remaining functional features
+2. Check for any missed contract features
+3. Test frontend in browser once running
+
+---
+
+## Session Log - 2026-01-22 (Session 3)
+
+### Session Start
+- Feature stats at start: 77 passing (21.9%)
+- Frontend dev server already running on port 8080
+
+### Work Completed
+
+1. **Verified Column bet payout 2:1** (Feature #237)
+   - Tested via browser: column bet shows correct 2:1 payout
+   - getColumn() correctly identifies numbers 1,4,7... as column 1
+
+2. **Verified Linera integration** (Feature #331)
+   - Checked linera-views usage: MapView, RegisterView, QueueView
+   - Checked linera-web @linera/client integration
+   - Verified GraphQL service with async-graphql
+   - Confirmed cross-chain message types
+
+3. **Verified zero handling** (Feature #248)
+   - Zero only wins straight bet on 0
+   - All outside bets (red/black/odd/even/etc) lose
+
+4. **Verified payout includes stake** (Feature #249)
+   - Formula: bet * (multiplier + 1) = original + winnings
+   - 100 chip straight win = 3600 chips
+
+5. **Verified multiple winning bets** (Feature #250)
+   - Multiple winning bets all pay out
+   - PlayerBets.calculate_winnings() sums all winners
+
+6. **Added PlayerStats tracking** (Feature #272)
+   - Created PlayerStats struct with biggest_win, current_streak, best_streak
+   - Added player_stats MapView to state
+   - Updated place_bet and execute_spin to track stats
+
+7. **Added SpinResult player_count** (Feature #271)
+   - Added player_count field to SpinResult struct
+   - Counts players who bet each spin
+
+8. **Added spinComplete event** (Feature #300)
+   - RouletteWheel now emits spinComplete when spin finishes
+   - Watches isSpinning transition from true to false
+
+9. **Added ChipSelector balance disabling** (Feature #301)
+   - Chips exceeding balance are disabled
+   - Tooltip explains "Insufficient balance"
+
+### Session End
+- Features passing: 125 (35.5%)
+- Contract changes committed: PlayerStats, player_count, spinComplete event, ChipSelector
+
+### Commits This Session
+- "Add PlayerStats tracking and SpinResult player_count field"
+- "Add spinComplete event emission to RouletteWheel"
+- "Add balance-based chip disabling to ChipSelector"
+
+---
+
 ## Operational Notes
 - Start app: `./init.sh` (handles wallet init, contract build, deployment, and frontend start)
 - Alternative: `./conway_deploy.sh` for Conway testnet deployment

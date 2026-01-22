@@ -4,6 +4,10 @@ import { ref, readonly } from 'vue';
 const FAUCET_URL = import.meta.env.VITE_LINERA_FAUCET_URL || 'https://faucet.testnet-conway.linera.net';
 const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true';
 
+// Demo mode state
+let demoLastSpinResult = null;
+let demoSpinHistory = [];
+
 export function useLinera() {
   const chainId = ref(import.meta.env.VITE_CHAIN_ID || null);
   const appId = ref(import.meta.env.VITE_APP_ID || null);
@@ -114,6 +118,26 @@ export function useLinera() {
     if (isDemoMode.value) {
       // Simulate mutation in demo mode
       console.log('Demo mode mutation:', mutation, variables);
+
+      // Handle spin mutation - generate random result
+      if (mutation.includes('Spin')) {
+        demoLastSpinResult = Math.floor(Math.random() * 37); // 0-36
+        const colors = ['red', 'black', 'green'];
+        const RED_NUMBERS = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+        const resultColor = demoLastSpinResult === 0 ? 'green' : (RED_NUMBERS.includes(demoLastSpinResult) ? 'red' : 'black');
+
+        // Add to history
+        demoSpinHistory.unshift({
+          spinId: demoSpinHistory.length + 1,
+          result: demoLastSpinResult,
+          resultColor: resultColor,
+          seedHash: 'demo-seed-' + Math.random().toString(36).substring(7)
+        });
+        if (demoSpinHistory.length > 20) demoSpinHistory.pop();
+
+        console.log('Demo spin result:', demoLastSpinResult, resultColor);
+      }
+
       return { data: { success: true } };
     }
 
@@ -163,11 +187,25 @@ export function useLinera() {
  * Mock query responses for demo mode
  */
 function getMockQueryResponse(query) {
+  const RED_NUMBERS = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+
+  // Build last spin data if we have a result
+  let lastSpin = null;
+  if (demoLastSpinResult !== null) {
+    const resultColor = demoLastSpinResult === 0 ? 'green' : (RED_NUMBERS.includes(demoLastSpinResult) ? 'red' : 'black');
+    lastSpin = {
+      spinId: demoSpinHistory.length,
+      result: demoLastSpinResult,
+      resultColor: resultColor,
+      seedHash: 'demo-seed-hash'
+    };
+  }
+
   return {
     data: {
       tableStatus: {
         status: 'Open',
-        spinNumber: '1',
+        spinNumber: String(demoSpinHistory.length + 1),
         roundTotal: '0',
         isBettingOpen: true,
       },
@@ -177,13 +215,13 @@ function getMockQueryResponse(query) {
         maxTotalBet: '500000000',
         houseEdgeBps: 270,
       },
-      spinHistory: [],
+      spinHistory: demoSpinHistory,
       hotNumbers: [],
       coldNumbers: [],
-      lastSpin: null,
+      lastSpin: lastSpin,
       fairnessInfo: {
         nextSeedHash: 'a1b2c3d4e5f6...',
-        currentSeed: '',
+        currentSeed: demoLastSpinResult !== null ? 'demo-revealed-seed' : '',
       },
     },
   };

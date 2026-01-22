@@ -2,7 +2,7 @@
 <template>
   <div id="app" class="min-h-screen bg-gradient-to-b from-green-900 to-green-950 text-white">
     <!-- Header -->
-    <Header :balance="balance" />
+    <Header :balance="balance" :is-connected="isConnected" />
 
     <!-- CRITICAL: Chain ID display (judges look for this!) -->
     <ChainInfo
@@ -29,7 +29,7 @@
           <!-- Roulette Wheel -->
           <RouletteWheel
             :is-spinning="isSpinning"
-            :result="lastResult"
+            :last-result="lastResult"
             @spin-complete="onSpinComplete"
           />
 
@@ -109,7 +109,7 @@
 
     <!-- Win Popup -->
     <WinningsPopup
-      v-if="showWinPopup"
+      :show="showWinPopup"
       :amount="winAmount"
       :result="lastResult"
       @close="showWinPopup = false"

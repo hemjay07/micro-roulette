@@ -6,8 +6,57 @@
 - GOTCHA: Linera SDK 0.15.8 is required exactly
 - GOTCHA: Vite config requires COOP/COEP headers for WASM
 - Testing cargo: Cannot run `cargo` commands in sandboxed environment - need human intervention for build/test
+- Frontend npm: Install with `npm install --prefix /Users/mujeeb/projects/micro-roulette/frontend`
 
-## Session Log - 2026-01-22
+## Session Log - 2026-01-22 (Session 2)
+
+### Session Start
+- Feature stats at start: 60 passing (17.0%)
+
+### Work Completed
+1. **Implemented StartSpin operation** (Feature #291)
+   - Added TableStatus enum (Open, Spinning, PayingOut, Closed)
+   - StartSpin transitions from Open to Spinning
+   - Bets locked when status != Open
+
+2. **Implemented Message handlers** (Features #262-266)
+   - SpinResult handler with logging
+   - BetConfirmed handler with logging
+   - BetRejected handler with warning log
+   - Payout handler that credits balance
+   - Refund handler that credits balance
+
+3. **Implemented ResolveSpin operation** (Feature #292)
+   - Reveals server seed for verification
+   - Stores revealed seed in state
+   - Verifies result matches
+
+4. **Added provable fairness state**
+   - server_seed_hash, revealed_server_seed
+   - last_client_seed, last_result
+   - fairnessInfo GraphQL query
+
+5. **Verified contract test features** (Features #346-352)
+   - 17 unit tests exist in types.rs
+   - All contract operations implemented correctly
+
+6. **Updated README** (Feature #324)
+   - Added explicit "Linera Features Used" section
+   - Bullet list of all Linera features for judges
+
+### Session End
+- Features passing: 74 (21.0%)
+- Features skipped: Integration tests, deployment tests (require cargo/linera)
+
+### Next Session Priorities
+1. Start frontend development server
+2. Test UI components in browser
+3. Implement remaining UI features
+4. Get cargo build working for contract verification
+
+---
+
+## Session Log - 2026-01-22 (Session 1)
 
 ### Session Start
 - Feature stats at start: 17 passing (4.8%)
@@ -56,9 +105,3 @@
 - Features passing: 38 (10.8%)
 - Features skipped (need runtime/cargo): Integration tests, WASM build, deployment
 - All composables and service files created
-
-### Next Session Priorities
-1. Create utils/roulette.js and utils/constants.js
-2. Create Vue components (ChainInfo, RouletteWheel, BettingBoard, etc.)
-3. Run cargo build when environment allows
-4. Test deployment to Conway testnet

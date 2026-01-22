@@ -119,6 +119,8 @@ impl RouletteNumber {
 /// 6 = Dozen 1, 7 = Dozen 2, 8 = Dozen 3
 /// 9 = Column 1, 10 = Column 2, 11 = Column 3
 /// 12-48 = Straight bet on number (bet_type - 12)
+/// 49-59 = SixLine bets (bet_type - 49 = starting number: 1, 4, 7, ... 31)
+///         Six-line covers 6 numbers in two adjacent rows
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct BetType(pub u8);
 
@@ -136,10 +138,11 @@ impl BetType {
     pub const COLUMN_2: u8 = 10;
     pub const COLUMN_3: u8 = 11;
     pub const STRAIGHT_OFFSET: u8 = 12;
+    pub const SIXLINE_OFFSET: u8 = 49;
 
     /// Create a new bet type
     pub fn new(value: u8) -> Option<Self> {
-        if value <= 48 {
+        if value <= 59 {
             Some(Self(value))
         } else {
             None
@@ -148,16 +151,35 @@ impl BetType {
 
     /// Check if this bet type is valid
     pub fn is_valid(&self) -> bool {
-        self.0 <= 48
+        match self.0 {
+            0..=48 => true,  // Outside bets + straight bets
+            49..=59 => {
+                // SixLine: valid starting numbers are 1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31
+                let start = self.sixline_start();
+                start >= 1 && start <= 31 && (start - 1) % 3 == 0
+            }
+            _ => false,
+        }
+    }
+
+    /// Get the starting number for a SixLine bet
+    fn sixline_start(&self) -> u8 {
+        if self.0 >= Self::SIXLINE_OFFSET {
+            let idx = self.0 - Self::SIXLINE_OFFSET;
+            1 + (idx * 3)  // 1, 4, 7, 10, ... 31
+        } else {
+            0
+        }
     }
 
     /// Returns the payout multiplier for this bet type (not including original bet)
     pub fn payout_multiplier(&self) -> u64 {
         match self.0 {
-            0..=5 => 1,   // Red, Black, Odd, Even, Low, High - pays 1:1
-            6..=8 => 2,   // Dozens - pays 2:1
-            9..=11 => 2,  // Columns - pays 2:1
-            12..=48 => 35, // Straight - pays 35:1
+            0..=5 => 1,      // Red, Black, Odd, Even, Low, High - pays 1:1
+            6..=8 => 2,      // Dozens - pays 2:1
+            9..=11 => 2,     // Columns - pays 2:1
+            12..=48 => 35,   // Straight - pays 35:1
+            49..=59 => 5,    // SixLine - pays 5:1
             _ => 0,
         }
     }
@@ -178,6 +200,12 @@ impl BetType {
             10 => result.column() == Some(2),
             11 => result.column() == Some(3),
             n if n >= 12 && n <= 48 => result.0 == (n - 12),
+            n if n >= 49 && n <= 59 => {
+                // SixLine: covers 6 consecutive numbers in two rows
+                // e.g., start=1 covers 1,2,3,4,5,6
+                let start = self.sixline_start();
+                result.0 >= start && result.0 <= start + 5
+            }
             _ => false,
         }
     }
@@ -198,7 +226,22 @@ impl BetType {
             10 => "Column 2".to_string(),
             11 => "Column 3".to_string(),
             n if n >= 12 && n <= 48 => format!("{}", n - 12),
+            n if n >= 49 && n <= 59 => {
+                let start = self.sixline_start();
+                format!("Six Line {}-{}", start, start + 5)
+            }
             _ => "Invalid".to_string(),
+        }
+    }
+
+    /// Create a SixLine bet from starting number (1, 4, 7, ... 31)
+    pub fn sixline(start: u8) -> Option<Self> {
+        // Valid starts: 1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31
+        if start >= 1 && start <= 31 && (start - 1) % 3 == 0 {
+            let idx = (start - 1) / 3;
+            Some(Self(Self::SIXLINE_OFFSET + idx))
+        } else {
+            None
         }
     }
 }

@@ -13,7 +13,7 @@ pub type Owner = AccountOwner;
 #[view(context = ViewStorageContext)]
 pub struct RouletteState {
     /// Admin account that can perform privileged operations
-    pub admin: RegisterView<Owner>,
+    pub admin: RegisterView<Option<Owner>>,
 
     /// Whether the contract is paused
     pub paused: RegisterView<bool>,

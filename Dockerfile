@@ -1,8 +1,8 @@
 # MicroRoulette - Provably Fair Linera Roulette
 # Uses pre-built base image for fast startup (no 2+ hour build!)
-# Base image: mujeebmuzaffar/linera-base:0.15.8
+# Base image: mujeebdimeji/linera-base:0.15.8
 
-FROM mujeebmuzaffar/linera-base:0.15.8 as builder
+FROM mujeebdimeji/linera-base:0.15.8 as builder
 
 WORKDIR /app
 COPY . .

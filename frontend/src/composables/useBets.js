@@ -25,6 +25,7 @@ export function useBets() {
   const currentBets = ref([]);
   const lastBets = ref([]);
   const selectedChip = ref(10);
+  let isDoubling = false; // Guard against rapid double-clicks
 
   // Computed
   const totalBetAmount = computed(() => {
@@ -109,13 +110,22 @@ export function useBets() {
   }
 
   /**
-   * Double current bets
+   * Double current bets (with debounce protection)
    */
   function doubleBets() {
+    // Guard against rapid double-clicks
+    if (isDoubling) return;
+    isDoubling = true;
+
     currentBets.value = currentBets.value.map(bet => ({
       ...bet,
       amount: bet.amount * 2,
     }));
+
+    // Reset guard after short delay
+    setTimeout(() => {
+      isDoubling = false;
+    }, 300);
   }
 
   /**

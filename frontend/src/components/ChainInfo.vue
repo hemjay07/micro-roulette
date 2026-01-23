@@ -14,9 +14,20 @@
         </span>
       </div>
 
-      <!-- Provably Fair Badge -->
+      <!-- Demo Mode Badge -->
       <div
-        v-if="isConnected"
+        v-if="isDemoMode && isConnected"
+        class="flex items-center space-x-1 bg-yellow-900/50 px-2 py-1 rounded-full"
+      >
+        <svg class="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+        <span class="text-xs text-yellow-400 font-medium">Demo Mode</span>
+      </div>
+
+      <!-- Provably Fair Badge (when not in demo mode) -->
+      <div
+        v-else-if="isConnected"
         class="flex items-center space-x-1 bg-green-900/50 px-2 py-1 rounded-full"
       >
         <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -102,6 +113,10 @@ const props = defineProps({
     default: false
   },
   isConnecting: {
+    type: Boolean,
+    default: false
+  },
+  isDemoMode: {
     type: Boolean,
     default: false
   },

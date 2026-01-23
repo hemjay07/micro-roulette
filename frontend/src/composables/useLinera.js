@@ -72,12 +72,13 @@ export function useLinera() {
     } catch (err) {
       console.error('Connection error:', err);
 
-      // Fall back to demo mode
+      // Fall back to demo mode - this is a valid operational state, not an error
       console.log('Falling back to demo mode');
       isDemoMode.value = true;
       chainId.value = 'demo-chain-' + Math.random().toString(36).substring(7);
       isConnected.value = true;
-      error.value = 'Running in demo mode (contract not deployed)';
+      // Don't set error - demo mode allows full UI testing without blockchain connection
+      error.value = null;
 
       return { chainId: chainId.value, appId: appId.value, demoMode: true };
     } finally {
@@ -233,6 +234,13 @@ function getMockQueryResponse(query) {
     };
   }
 
+  // Parse limit parameter from spinHistory query if present
+  let spinHistoryLimit = 20; // default limit
+  const limitMatch = query.match(/spinHistory\s*\(\s*limit\s*:\s*(\d+)\s*\)/);
+  if (limitMatch) {
+    spinHistoryLimit = parseInt(limitMatch[1], 10);
+  }
+
   return {
     data: {
       tableStatus: {
@@ -247,7 +255,7 @@ function getMockQueryResponse(query) {
         maxTotalBet: '500000000',
         houseEdgeBps: 270,
       },
-      spinHistory: demoSpinHistory,
+      spinHistory: demoSpinHistory.slice(0, spinHistoryLimit),
       hotNumbers: getHotNumbers(),
       coldNumbers: getColdNumbers(),
       numberStats: demoNumberStats,

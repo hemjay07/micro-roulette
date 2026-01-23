@@ -1,3 +1,71 @@
+## Session Log - 2026-01-23 (Session 11)
+
+### Session Start
+- Feature stats at start: 217 passing (61.6%)
+- Continued from session 10
+
+### Work Completed
+
+1. **Feature #107 - Connect button disabled during connection** ✅
+   - Verified ChainInfo.vue has `:disabled="isConnecting"` on Connect button
+   - Verified useLinera.js has guard: `if (isConnecting.value || isConnected.value) return;`
+   - Button properly disables during connection and prevents double-clicks
+
+2. **Feature #108 - Cleared bets removed from all views** ✅
+   - Placed bets on numbers 17, RED, and 7 (30 chips total)
+   - Clicked Clear Bets - all bets removed
+   - Total bet showed 0 chips, Clear Bets disabled, highlights removed
+
+3. **Feature #109 - Spin clears bets for new round** ✅
+   - Placed bets on 17 and RED (20 chips)
+   - Completed spin (result: 16 red - won!)
+   - After spin: currentBets cleared (Total: 0), lastBets populated (Repeat enabled)
+
+4. **Feature #111 - Player stats updated on win** ✅
+   - Verified contract code correctly tracks stats:
+     - contract.rs line 369: `stats.record_win(winnings)`
+     - types.rs: PlayerStats has total_won field
+   - Created intervention #94 for full blockchain verification
+
+5. **Feature #112 - Player stats updated on loss** ✅
+   - Added `total_lost` field to PlayerStats struct
+   - Updated `record_loss()` to accept amount parameter
+   - Updated contract to pass `player_bets.total_amount` on loss
+
+6. **Feature #113 - Default chip selection** ✅
+   - useBets.js: `const selectedChip = ref(10);`
+   - UI shows "Current: 10" on fresh load
+   - ChipSelector.vue has default: 10
+
+7. **Feature #114 - Default table status is Open** ✅
+   - types.rs: `#[default]` attribute on TableStatus::Open
+   - contract.rs line 62: `self.state.status.set(TableStatus::Open);`
+   - Demo mode returns isBettingOpen: true
+
+8. **Feature #115 - Default house edge is 2.7%** ✅
+   - Multiple files confirm houseEdgeBps: 270
+   - init.sh, conway_deploy.sh, useLinera.js all use 270
+   - 2.7% is European roulette standard
+
+### Code Changes
+- contracts/src/types.rs: Added total_lost field, updated record_loss() signature
+- contracts/src/contract.rs: Pass bet amount to record_loss()
+
+### Commits This Session
+- "Add total_lost tracking to PlayerStats"
+
+### Session End
+- Features passing: 225 (63.9%)
+- Completed 8 features
+- Added total_lost tracking for proper loss statistics
+
+### Next Session Priorities
+1. Continue with remaining K. Default & Reset features
+2. Work through L. Error Handling features
+3. Continue UI verification features
+
+---
+
 ## Session Log - 2026-01-22 (Session 10)
 
 ### Session Start

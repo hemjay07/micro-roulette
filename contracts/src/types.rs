@@ -272,7 +272,7 @@ impl Bet {
 
     /// Calculate total payout if this bet wins (original bet + winnings)
     pub fn calculate_payout(&self) -> Amount {
-        let multiplier = self.bet_type.payout_multiplier();
+        let multiplier = self.bet_type.payout_multiplier() as u128;
         let winnings_value = self.amount.saturating_mul(multiplier);
         self.amount.saturating_add(winnings_value)
     }
@@ -358,6 +358,8 @@ pub struct PlayerStats {
     pub total_wagered: Amount,
     /// Total amount won (all time)
     pub total_won: Amount,
+    /// Total amount lost (all time)
+    pub total_lost: Amount,
     /// Biggest single win
     pub biggest_win: Amount,
     /// Current win/loss streak (positive = wins, negative = losses)
@@ -395,7 +397,9 @@ impl PlayerStats {
     }
 
     /// Update stats after a loss
-    pub fn record_loss(&mut self) {
+    pub fn record_loss(&mut self, amount: Amount) {
+        self.total_lost = self.total_lost.saturating_add(amount);
+
         // Update streak
         if self.current_streak <= 0 {
             self.current_streak -= 1;

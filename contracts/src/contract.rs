@@ -50,7 +50,7 @@ impl Contract for RouletteContract {
     async fn instantiate(&mut self, argument: Self::InstantiationArgument) {
         // Set the creator as admin
         let admin = self.signer();
-        self.state.admin.set(admin);
+        self.state.admin.set(Some(admin));
         self.state.paused.set(false);
         self.state.treasury.set(Amount::ZERO);
         self.state.house_edge_bps.set(argument.house_edge_bps);
@@ -171,7 +171,7 @@ impl Contract for RouletteContract {
 
 impl RouletteContract {
     /// Get authenticated signer or panic
-    fn signer(&self) -> Owner {
+    fn signer(&mut self) -> Owner {
         self.runtime
             .authenticated_signer()
             .expect("Operation must be authenticated")
@@ -343,7 +343,6 @@ impl RouletteContract {
         let player_keys: Vec<Owner> = self.state.current_bets
             .indices()
             .await
-            .map(|iter| iter.collect())
             .unwrap_or_default();
 
         // Count players before iterating
@@ -371,8 +370,8 @@ impl RouletteContract {
 
                     log::info!("Player {:?} won {:?}", player, winnings);
                 } else {
-                    // Record loss in stats
-                    stats.record_loss();
+                    // Record loss in stats (amount lost = total wagered this round)
+                    stats.record_loss(player_bets.total_amount);
                 }
 
                 // Save updated stats
@@ -391,14 +390,11 @@ impl RouletteContract {
         };
 
         // Add to history (keep last 20)
-        self.state.spin_history.push_back(spin_result).await.ok();
+        self.state.spin_history.push_back(spin_result);
 
         // Trim history to 20 entries
-        while let Ok(count) = self.state.spin_history.count().await {
-            if count <= 20 {
-                break;
-            }
-            self.state.spin_history.delete_front().await.ok();
+        while self.state.spin_history.count() > 20 {
+            self.state.spin_history.delete_front();
         }
 
         // Update global statistics
@@ -464,7 +460,6 @@ impl RouletteContract {
         let player_keys: Vec<Owner> = self.state.current_bets
             .indices()
             .await
-            .map(|iter| iter.collect())
             .unwrap_or_default();
 
         for player in player_keys {
@@ -483,9 +478,9 @@ impl RouletteContract {
     // ========== ADMIN METHODS ==========
 
     /// Check if the caller is the admin, panics if not
-    async fn require_admin(&self) {
+    async fn require_admin(&mut self) {
         let caller = self.signer();
-        let admin = *self.state.admin.get();
+        let admin = self.state.admin.get().expect("Admin not set");
         assert!(caller == admin, "Unauthorized: admin required");
     }
 

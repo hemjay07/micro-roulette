@@ -54,15 +54,36 @@
 ### Commits This Session
 - "Add total_lost tracking to PlayerStats"
 
+9. **Feature #116 - Reset bets for new round** ✅
+   - open_new_round() in contract clears pending bets
+   - Frontend clearBets() called after spin complete
+   - Verified bets reset after wheel spin animation
+
+10. **Feature #117 - Clear filters resets board** ✅
+    - Placed bets on 17, 7, and RED (30 chips total)
+    - Verified buttons had [active] state (yellow rings)
+    - Clicked Clear Bets
+    - All [active] states removed, Total: 0 chips
+
+### Code Changes
+- contracts/src/types.rs: Added total_lost field, updated record_loss() signature
+- contracts/src/contract.rs: Pass bet amount to record_loss()
+
+### Commits This Session
+- "Add total_lost tracking to PlayerStats"
+- "Update progress notes for session 11 - 8 features verified"
+
 ### Session End
-- Features passing: 225 (63.9%)
-- Completed 8 features
+- Features passing: 227 (64.5%)
+- Completed 10 features in total
 - Added total_lost tracking for proper loss statistics
+- Created non-blocking intervention #94 for blockchain verification of player stats
 
 ### Next Session Priorities
-1. Continue with remaining K. Default & Reset features
-2. Work through L. Error Handling features
+1. Continue with L. Error Handling features
+2. Work through M. Accessibility features
 3. Continue UI verification features
+4. Deploy to Conway testnet for full blockchain testing
 
 ---
 

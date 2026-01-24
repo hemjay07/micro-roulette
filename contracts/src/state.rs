@@ -2,7 +2,7 @@
 //! State management using Linera Views
 
 use crate::types::{TableStatus, PlayerBets, SpinResult, PlayerStats};
-use linera_sdk::linera_base_types::{AccountOwner, Amount};
+use linera_sdk::linera_base_types::{AccountOwner, Amount, Timestamp};
 use linera_sdk::views::{MapView, QueueView, RegisterView, RootView, ViewStorageContext};
 
 /// Type alias for player/owner addresses
@@ -47,6 +47,9 @@ pub struct RouletteState {
 
     /// Total amount bet this round
     pub round_total: RegisterView<Amount>,
+
+    /// Betting deadline for current round
+    pub betting_deadline: RegisterView<Option<Timestamp>>,
 
     /// Recent spin results (last 20)
     pub spin_history: QueueView<SpinResult>,

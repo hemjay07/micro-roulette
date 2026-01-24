@@ -17,6 +17,9 @@ use micro_roulette::state::{Owner, RouletteState};
 // Contract entry point
 linera_sdk::contract!(RouletteContract);
 
+/// Betting time window in seconds
+const BETTING_TIME_SECONDS: u64 = 30;
+
 /// The MicroRoulette contract
 pub struct RouletteContract {
     state: RouletteState,
@@ -61,6 +64,10 @@ impl Contract for RouletteContract {
         self.state.spin_number.set(1);
         self.state.status.set(TableStatus::Open);
         self.state.round_total.set(Amount::ZERO);
+
+        // Set betting deadline (30 seconds from now)
+        let deadline = self.now().saturating_add_micros(BETTING_TIME_SECONDS * 1_000_000);
+        self.state.betting_deadline.set(Some(deadline));
         self.state.total_volume.set(Amount::ZERO);
         self.state.total_payouts.set(Amount::ZERO);
         self.state.total_spins.set(0);
@@ -230,6 +237,12 @@ impl RouletteContract {
         let status = *self.state.status.get();
         assert!(status == TableStatus::Open, "Table is not accepting bets (status: {:?})", status);
 
+        // Check betting deadline
+        if let Some(deadline) = *self.state.betting_deadline.get() {
+            let now = self.now();
+            assert!(now <= deadline, "Betting period has ended");
+        }
+
         let player = self.signer();
 
         // Validate bet type
@@ -316,6 +329,9 @@ impl RouletteContract {
 
         // Lock bets by changing status to Spinning
         self.state.status.set(TableStatus::Spinning);
+
+        // Clear betting deadline
+        self.state.betting_deadline.set(None);
 
         log::info!("Spin started, bets locked. Status: Spinning");
     }
@@ -479,6 +495,10 @@ impl RouletteContract {
         // Set status to open
         self.state.status.set(TableStatus::Open);
 
+        // Set betting deadline (30 seconds from now)
+        let deadline = self.now().saturating_add_micros(BETTING_TIME_SECONDS * 1_000_000);
+        self.state.betting_deadline.set(Some(deadline));
+
         log::info!("New round opened, spin #{}", self.state.spin_number.get());
     }
 
@@ -513,9 +533,13 @@ impl RouletteContract {
         self.state.paused.set(paused);
         if paused {
             self.state.status.set(TableStatus::Closed);
+            self.state.betting_deadline.set(None);
             log::info!("Admin paused the contract");
         } else {
             self.state.status.set(TableStatus::Open);
+            // Set betting deadline (30 seconds from now)
+            let deadline = self.now().saturating_add_micros(BETTING_TIME_SECONDS * 1_000_000);
+            self.state.betting_deadline.set(Some(deadline));
             log::info!("Admin unpaused the contract");
         }
     }

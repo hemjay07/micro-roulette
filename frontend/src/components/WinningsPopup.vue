@@ -45,6 +45,7 @@
 
             <!-- Awesome! Button -->
             <button
+              ref="closeButton"
               @click="handleClose"
               class="w-full py-3 px-6 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-xl transition-colors text-lg"
             >
@@ -58,8 +59,11 @@
 </template>
 
 <script setup>
-import { computed, watch, onMounted } from 'vue';
+import { computed, watch, onMounted, ref, nextTick } from 'vue';
 import { getNumberColor, formatAmount } from '../utils/roulette.js';
+
+// Reference to the close button
+const closeButton = ref(null);
 
 const props = defineProps({
   show: {
@@ -77,6 +81,33 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['close']);
+
+// Handle keyboard events
+function handleKeydown(event) {
+  if (event.key === 'Escape') {
+    handleClose();
+  }
+}
+
+// Add/remove keyboard listener when popup shows/hides
+watch(() => props.show, async (newVal) => {
+  if (newVal) {
+    window.addEventListener('keydown', handleKeydown);
+    // Auto-focus the close button for keyboard accessibility
+    await nextTick();
+    if (closeButton.value) {
+      closeButton.value.focus();
+    }
+  } else {
+    window.removeEventListener('keydown', handleKeydown);
+  }
+});
+
+// Cleanup on unmount
+import { onUnmounted } from 'vue';
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown);
+});
 
 // Result color styling
 const resultColorClass = computed(() => {

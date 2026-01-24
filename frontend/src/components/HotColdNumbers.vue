@@ -10,14 +10,17 @@
         </h3>
 
         <div v-if="hotNumbers && hotNumbers.length > 0" class="flex flex-wrap gap-1">
-          <span
+          <button
             v-for="num in hotNumbers"
             :key="`hot-${num}`"
-            class="number-badge"
+            @click="handleNumberClick(num)"
+            class="number-badge hover:scale-110 transition-transform cursor-pointer"
             :class="getNumberColorClass(num)"
+            :title="`Bet on ${num}`"
+            :aria-label="`Place bet on number ${num}`"
           >
             {{ num }}
-          </span>
+          </button>
         </div>
         <div v-else class="text-gray-600 text-sm italic">
           No data yet
@@ -32,14 +35,17 @@
         </h3>
 
         <div v-if="coldNumbers && coldNumbers.length > 0" class="flex flex-wrap gap-1">
-          <span
+          <button
             v-for="num in coldNumbers"
             :key="`cold-${num}`"
-            class="number-badge opacity-60"
+            @click="handleNumberClick(num)"
+            class="number-badge opacity-60 hover:opacity-100 hover:scale-110 transition-all cursor-pointer"
             :class="getNumberColorClass(num)"
+            :title="`Bet on ${num}`"
+            :aria-label="`Place bet on number ${num}`"
           >
             {{ num }}
-          </span>
+          </button>
         </div>
         <div v-else class="text-gray-600 text-sm italic">
           No data yet
@@ -63,12 +69,19 @@ defineProps({
   }
 });
 
+const emit = defineEmits(['place-bet']);
+
 // Get CSS class based on number color
 function getNumberColorClass(num) {
   const color = getNumberColor(num);
   if (color === 'red') return 'bg-roulette-red text-white';
   if (color === 'black') return 'bg-roulette-black text-white';
   return 'bg-roulette-green text-white';
+}
+
+// Handle number click - place straight bet
+function handleNumberClick(number) {
+  emit('place-bet', { betType: 'Straight', number });
 }
 </script>
 

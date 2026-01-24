@@ -24,7 +24,11 @@
             :history="spinHistory"
             @verify-spin="handleVerifySpin"
           />
-          <HotColdNumbers :hot-numbers="hotNumbers" :cold-numbers="coldNumbers" />
+          <HotColdNumbers
+            :hot-numbers="hotNumbers"
+            :cold-numbers="coldNumbers"
+            @place-bet="handlePlaceBet"
+          />
         </div>
 
         <!-- Center column: Wheel & Board -->

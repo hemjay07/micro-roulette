@@ -46,6 +46,7 @@
             :current-bets="currentBets"
             :is-betting-open="isBettingOpen"
             @place-bet="handlePlaceBet"
+            @remove-bet="handleRemoveBet"
           />
 
           <!-- Chip Selector -->
@@ -199,6 +200,7 @@ const {
   clearBets,
   repeatLastBet,
   doubleBets,
+  removeBetFromPosition,
   getBetsForContract,
 } = useBets(config);
 
@@ -249,6 +251,13 @@ function handlePlaceBet(betInfo) {
   const success = placeBet(betInfo);
   if (!success && validationError.value) {
     showNotification(validationError.value, 'error', 4000);
+  }
+}
+
+function handleRemoveBet(betInfo) {
+  const removed = removeBetFromPosition(betInfo);
+  if (removed) {
+    showNotification('Bet removed', 'info', 2000);
   }
 }
 

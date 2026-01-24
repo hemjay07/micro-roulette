@@ -8,6 +8,7 @@
         <div class="flex-shrink-0">
           <button
             @click="placeBet('Straight', 0)"
+            @contextmenu.prevent="removeBet('Straight', 0)"
             class="roulette-number green h-full"
             :class="{ 'ring-2 ring-yellow-400': hasBetOn('Straight', 0) }"
             style="min-height: 100px; width: 40px;"
@@ -24,6 +25,7 @@
               v-for="n in row3Numbers"
               :key="n"
               @click="placeBet('Straight', n)"
+              @contextmenu.prevent="removeBet('Straight', n)"
               class="roulette-number flex-1"
               :class="[
                 getNumberColorClass(n),
@@ -40,6 +42,7 @@
               v-for="n in row2Numbers"
               :key="n"
               @click="placeBet('Straight', n)"
+              @contextmenu.prevent="removeBet('Straight', n)"
               class="roulette-number flex-1"
               :class="[
                 getNumberColorClass(n),
@@ -56,6 +59,7 @@
               v-for="n in row1Numbers"
               :key="n"
               @click="placeBet('Straight', n)"
+              @contextmenu.prevent="removeBet('Straight', n)"
               class="roulette-number flex-1"
               :class="[
                 getNumberColorClass(n),
@@ -71,6 +75,7 @@
         <div class="flex-shrink-0 flex flex-col gap-1">
           <button
             @click="placeBet('Column', 3)"
+            @contextmenu.prevent="removeBet('Column', 3)"
             class="betting-zone flex-1"
             :class="{ 'ring-2 ring-yellow-400': hasBetOn('Column', 3) }"
           >
@@ -78,6 +83,7 @@
           </button>
           <button
             @click="placeBet('Column', 2)"
+            @contextmenu.prevent="removeBet('Column', 2)"
             class="betting-zone flex-1"
             :class="{ 'ring-2 ring-yellow-400': hasBetOn('Column', 2) }"
           >
@@ -85,6 +91,7 @@
           </button>
           <button
             @click="placeBet('Column', 1)"
+            @contextmenu.prevent="removeBet('Column', 1)"
             class="betting-zone flex-1"
             :class="{ 'ring-2 ring-yellow-400': hasBetOn('Column', 1) }"
           >
@@ -98,6 +105,7 @@
         <div class="w-10"></div> <!-- Spacer for 0 -->
         <button
           @click="placeBet('Dozen', 1)"
+          @contextmenu.prevent="removeBet('Dozen', 1)"
           class="betting-zone flex-1"
           :class="{ 'ring-2 ring-yellow-400': hasBetOn('Dozen', 1) }"
         >
@@ -105,6 +113,7 @@
         </button>
         <button
           @click="placeBet('Dozen', 2)"
+          @contextmenu.prevent="removeBet('Dozen', 2)"
           class="betting-zone flex-1"
           :class="{ 'ring-2 ring-yellow-400': hasBetOn('Dozen', 2) }"
         >
@@ -112,6 +121,7 @@
         </button>
         <button
           @click="placeBet('Dozen', 3)"
+          @contextmenu.prevent="removeBet('Dozen', 3)"
           class="betting-zone flex-1"
           :class="{ 'ring-2 ring-yellow-400': hasBetOn('Dozen', 3) }"
         >
@@ -125,6 +135,7 @@
         <div class="w-10"></div> <!-- Spacer for 0 -->
         <button
           @click="placeBet('Low', null)"
+          @contextmenu.prevent="removeBet('Low', null)"
           class="betting-zone flex-1"
           :class="{ 'ring-2 ring-yellow-400': hasBetOn('Low', null) }"
         >
@@ -132,6 +143,7 @@
         </button>
         <button
           @click="placeBet('Even', null)"
+          @contextmenu.prevent="removeBet('Even', null)"
           class="betting-zone flex-1"
           :class="{ 'ring-2 ring-yellow-400': hasBetOn('Even', null) }"
         >
@@ -139,6 +151,7 @@
         </button>
         <button
           @click="placeBet('Red', null)"
+          @contextmenu.prevent="removeBet('Red', null)"
           class="betting-zone flex-1 !bg-roulette-red"
           :class="{ 'ring-2 ring-yellow-400': hasBetOn('Red', null) }"
         >
@@ -146,6 +159,7 @@
         </button>
         <button
           @click="placeBet('Black', null)"
+          @contextmenu.prevent="removeBet('Black', null)"
           class="betting-zone flex-1 !bg-roulette-black"
           :class="{ 'ring-2 ring-yellow-400': hasBetOn('Black', null) }"
         >
@@ -153,6 +167,7 @@
         </button>
         <button
           @click="placeBet('Odd', null)"
+          @contextmenu.prevent="removeBet('Odd', null)"
           class="betting-zone flex-1"
           :class="{ 'ring-2 ring-yellow-400': hasBetOn('Odd', null) }"
         >
@@ -160,6 +175,7 @@
         </button>
         <button
           @click="placeBet('High', null)"
+          @contextmenu.prevent="removeBet('High', null)"
           class="betting-zone flex-1"
           :class="{ 'ring-2 ring-yellow-400': hasBetOn('High', null) }"
         >
@@ -196,7 +212,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['placeBet']);
+const emit = defineEmits(['placeBet', 'removeBet']);
 
 // Number rows (standard roulette layout)
 // Row 1 (bottom): 1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34
@@ -236,6 +252,12 @@ function getNumberColorClass(num) {
 function placeBet(betType, number) {
   if (props.disabled) return;
   emit('placeBet', { betType, number });
+}
+
+// Remove bet handler
+function removeBet(betType, number) {
+  if (props.disabled) return;
+  emit('removeBet', { betType, number });
 }
 
 // Check if there's a bet on this position

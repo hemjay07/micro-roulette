@@ -205,6 +205,43 @@ export function useBets(config) {
   }
 
   /**
+   * Remove bet from a specific position
+   */
+  function removeBetFromPosition(betInfo) {
+    const betType = (betInfo.betType || betInfo.type || '').toLowerCase();
+    let number = betInfo.number;
+    let dozen = null;
+    let column = null;
+    let sixLineStart = null;
+
+    if (betType === 'dozen') {
+      dozen = betInfo.number;
+      number = null;
+    } else if (betType === 'column') {
+      column = betInfo.number;
+      number = null;
+    } else if (betType === 'sixline') {
+      sixLineStart = betInfo.number || betInfo.sixLineStart;
+      number = null;
+    }
+
+    const index = currentBets.value.findIndex(b =>
+      b.type === betType &&
+      b.number === number &&
+      b.column === column &&
+      b.dozen === dozen &&
+      b.sixLineStart === sixLineStart
+    );
+
+    if (index >= 0) {
+      currentBets.value.splice(index, 1);
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
    * Convert bets to format expected by contract
    */
   function getBetsForContract() {
@@ -267,6 +304,7 @@ export function useBets(config) {
     repeatLastBet,
     doubleBets,
     removeBet,
+    removeBetFromPosition,
     getBetsForContract,
   };
 }

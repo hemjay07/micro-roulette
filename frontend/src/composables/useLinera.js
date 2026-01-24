@@ -4,6 +4,11 @@ import { ref, readonly } from 'vue';
 const FAUCET_URL = import.meta.env.VITE_LINERA_FAUCET_URL || 'https://faucet.testnet-conway.linera.net';
 const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true';
 
+// Reconnection settings
+const MAX_RETRIES = 5;
+const INITIAL_BACKOFF_MS = 1000; // 1 second
+const MAX_BACKOFF_MS = 30000; // 30 seconds
+
 // Demo mode state
 let demoLastSpinResult = null;
 let demoSpinHistory = [];
@@ -19,9 +24,65 @@ export function useLinera() {
   const faucet = ref(null);
   const application = ref(null);
   const isDemoMode = ref(false);
+  const reconnectAttempts = ref(0);
+  const isReconnecting = ref(false);
 
   /**
-   * Connect to Linera network
+   * Calculate exponential backoff delay
+   */
+  function getBackoffDelay(attemptNumber) {
+    const delay = Math.min(
+      INITIAL_BACKOFF_MS * Math.pow(2, attemptNumber),
+      MAX_BACKOFF_MS
+    );
+    return delay;
+  }
+
+  /**
+   * Attempt connection with retry logic
+   */
+  async function attemptConnection() {
+    // Dynamic import of linera-web
+    const linera = await import('@linera/client');
+
+    // Initialize WASM module - try different initialization methods
+    if (typeof linera.default === 'function') {
+      await linera.default();
+    } else if (typeof linera.init === 'function') {
+      await linera.init();
+    }
+    // If neither exists, the module may auto-initialize
+
+    // Create faucet instance
+    if (linera.Faucet) {
+      faucet.value = new linera.Faucet(FAUCET_URL);
+
+      // Create wallet
+      const wallet = await faucet.value.createWallet();
+
+      // Create client
+      client.value = new linera.Client(wallet);
+
+      // Claim a chain from faucet
+      chainId.value = await faucet.value.claimChain(client.value);
+
+      console.log('Connected to Linera');
+      console.log('Chain ID:', chainId.value);
+
+      // Get application handle if APP_ID is set
+      if (appId.value) {
+        application.value = await client.value.frontend().application(appId.value);
+        console.log('Connected to application:', appId.value);
+      }
+
+      return { chainId: chainId.value, appId: appId.value };
+    } else {
+      throw new Error('Linera client not available');
+    }
+  }
+
+  /**
+   * Connect to Linera network with retry logic
    */
   async function connect() {
     if (isConnecting.value || isConnected.value) return;
@@ -29,60 +90,60 @@ export function useLinera() {
     isConnecting.value = true;
     error.value = null;
 
-    try {
-      // Dynamic import of linera-web
-      const linera = await import('@linera/client');
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const result = await attemptConnection();
 
-      // Initialize WASM module - try different initialization methods
-      if (typeof linera.default === 'function') {
-        await linera.default();
-      } else if (typeof linera.init === 'function') {
-        await linera.init();
-      }
-      // If neither exists, the module may auto-initialize
+        // Success - reset reconnect counter and mark as connected
+        reconnectAttempts.value = 0;
+        isConnected.value = true;
+        return result;
 
-      // Create faucet instance
-      if (linera.Faucet) {
-        faucet.value = new linera.Faucet(FAUCET_URL);
+      } catch (err) {
+        console.error(`Connection attempt ${attempt + 1}/${MAX_RETRIES + 1} failed:`, err);
+        reconnectAttempts.value = attempt + 1;
+        error.value = err.message;
 
-        // Create wallet
-        const wallet = await faucet.value.createWallet();
-
-        // Create client
-        client.value = new linera.Client(wallet);
-
-        // Claim a chain from faucet
-        chainId.value = await faucet.value.claimChain(client.value);
-
-        console.log('Connected to Linera');
-        console.log('Chain ID:', chainId.value);
-
-        // Get application handle if APP_ID is set
-        if (appId.value) {
-          application.value = await client.value.frontend().application(appId.value);
-          console.log('Connected to application:', appId.value);
+        // If this was the last attempt, fall back to demo mode
+        if (attempt === MAX_RETRIES) {
+          console.log('All connection attempts failed, falling back to demo mode');
+          isDemoMode.value = true;
+          chainId.value = 'demo-chain-' + Math.random().toString(36).substring(7);
+          isConnected.value = true;
+          error.value = null; // Clear error in demo mode
+          return { chainId: chainId.value, appId: appId.value, demoMode: true };
         }
 
-        isConnected.value = true;
-        return { chainId: chainId.value, appId: appId.value };
-      } else {
-        throw new Error('Linera client not available');
+        // Wait with exponential backoff before next attempt
+        const backoffDelay = getBackoffDelay(attempt);
+        console.log(`Retrying in ${backoffDelay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, backoffDelay));
       }
+    }
 
-    } catch (err) {
-      console.error('Connection error:', err);
+    isConnecting.value = false;
+  }
 
-      // Fall back to demo mode - this is a valid operational state, not an error
-      console.log('Falling back to demo mode');
-      isDemoMode.value = true;
-      chainId.value = 'demo-chain-' + Math.random().toString(36).substring(7);
-      isConnected.value = true;
-      // Don't set error - demo mode allows full UI testing without blockchain connection
-      error.value = null;
+  /**
+   * Reconnect after disconnection
+   */
+  async function reconnect() {
+    if (isReconnecting.value) return;
 
-      return { chainId: chainId.value, appId: appId.value, demoMode: true };
+    isReconnecting.value = true;
+    isConnected.value = false;
+    error.value = null;
+
+    try {
+      // Reset client state
+      client.value = null;
+      faucet.value = null;
+      application.value = null;
+
+      // Attempt to reconnect
+      await connect();
     } finally {
-      isConnecting.value = false;
+      isReconnecting.value = false;
     }
   }
 
@@ -179,9 +240,12 @@ export function useLinera() {
     appId: readonly(appId),
     isConnected: readonly(isConnected),
     isConnecting: readonly(isConnecting),
+    isReconnecting: readonly(isReconnecting),
+    reconnectAttempts: readonly(reconnectAttempts),
     error: readonly(error),
     isDemoMode: readonly(isDemoMode),
     connect,
+    reconnect,
     query,
     mutate,
     onNotification,

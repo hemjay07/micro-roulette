@@ -18,8 +18,23 @@
           <span class="text-xs text-gray-400">Next Seed Hash (Committed)</span>
           <span class="text-[10px] px-2 py-0.5 bg-yellow-600/30 text-yellow-400 rounded">LOCKED</span>
         </div>
-        <div class="font-mono text-sm text-green-400 mt-1 break-all">
-          {{ nextSeedHash || 'Not available' }}
+        <div class="flex items-center space-x-2">
+          <div class="font-mono text-sm text-green-400 mt-1 truncate flex-1">
+            {{ nextSeedHash || 'Not available' }}
+          </div>
+          <button
+            v-if="nextSeedHash"
+            @click="copyToClipboard(nextSeedHash, 'nextHash')"
+            class="p-1 hover:bg-green-900/30 rounded transition-colors flex-shrink-0"
+            :title="copiedNextHash ? 'Copied!' : 'Copy hash'"
+          >
+            <svg v-if="!copiedNextHash" class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            <svg v-else class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -29,8 +44,23 @@
           <span class="text-xs text-gray-400">Current Seed (Revealed)</span>
           <span v-if="currentSeed" class="text-[10px] px-2 py-0.5 bg-green-600/30 text-green-400 rounded">REVEALED</span>
         </div>
-        <div class="font-mono text-sm text-gray-400 mt-1 break-all">
-          {{ currentSeed || 'Available after first spin' }}
+        <div class="flex items-center space-x-2">
+          <div class="font-mono text-sm text-gray-400 mt-1 truncate flex-1">
+            {{ currentSeed || 'Available after first spin' }}
+          </div>
+          <button
+            v-if="currentSeed"
+            @click="copyToClipboard(currentSeed, 'currentSeed')"
+            class="p-1 hover:bg-green-900/30 rounded transition-colors flex-shrink-0"
+            :title="copiedCurrentSeed ? 'Copied!' : 'Copy seed'"
+          >
+            <svg v-if="!copiedCurrentSeed" class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            <svg v-else class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </button>
         </div>
       </div>
     </div>
@@ -167,6 +197,10 @@ const isVerifying = ref(false);
 const verificationResult = ref(null);
 const showHowItWorks = ref(false);
 
+// Copy state
+const copiedNextHash = ref(false);
+const copiedCurrentSeed = ref(false);
+
 // Check if verification form is complete
 const canVerify = computed(() => {
   return verifyServerSeed.value.trim() &&
@@ -210,5 +244,21 @@ function getResultColor(color) {
   if (color === 'Red') return 'text-roulette-red';
   if (color === 'Black') return 'text-gray-300';
   return 'text-roulette-green';
+}
+
+// Copy to clipboard
+async function copyToClipboard(text, type) {
+  try {
+    await navigator.clipboard.writeText(text);
+    if (type === 'nextHash') {
+      copiedNextHash.value = true;
+      setTimeout(() => { copiedNextHash.value = false; }, 2000);
+    } else if (type === 'currentSeed') {
+      copiedCurrentSeed.value = true;
+      setTimeout(() => { copiedCurrentSeed.value = false; }, 2000);
+    }
+  } catch (err) {
+    console.error('Failed to copy:', err);
+  }
 }
 </script>

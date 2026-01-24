@@ -85,13 +85,13 @@
             <div class="flex justify-between items-center">
               <span class="text-gray-400">Total Bet:</span>
               <span class="text-2xl font-bold text-yellow-400">
-                {{ totalBetAmount }} chips
+                {{ formatAmount(totalBetAmount) }} chips
               </span>
             </div>
             <div class="flex justify-between items-center mt-2">
               <span class="text-gray-400">Max Potential Win:</span>
               <span class="text-xl font-bold text-green-400">
-                {{ maxPotentialWin }} chips
+                {{ formatAmount(maxPotentialWin) }} chips
               </span>
             </div>
           </div>
@@ -123,7 +123,7 @@ import confetti from 'canvas-confetti';
 import { useLinera } from './composables/useLinera';
 import { useRoulette } from './composables/useRoulette';
 import { useBets } from './composables/useBets';
-import { checkBetWin, getPayoutMultiplier } from './utils/roulette';
+import { checkBetWin, getPayoutMultiplier, formatAmount } from './utils/roulette';
 
 // Components
 import Header from './components/Header.vue';

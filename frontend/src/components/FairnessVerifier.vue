@@ -155,6 +155,19 @@
           />
         </div>
 
+        <!-- Auto-populate Button -->
+        <button
+          @click="autoPopulate"
+          :disabled="!canAutoPopulate"
+          class="w-full py-2 px-4 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
+          title="Fill in the last spin data"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+          </svg>
+          <span>Auto-populate Last Spin</span>
+        </button>
+
         <!-- Verify Button -->
         <button
           @click="handleVerify"
@@ -297,6 +310,23 @@ const canVerify = computed(() => {
          verifyClientSeed.value.trim() &&
          verifyNonce.value !== '';
 });
+
+// Check if we can auto-populate from last spin
+const canAutoPopulate = computed(() => {
+  return props.currentSeed && props.lastClientSeed && props.spinNumber > 0;
+});
+
+// Auto-populate form with last spin data
+function autoPopulate() {
+  if (canAutoPopulate.value) {
+    verifyServerSeed.value = props.currentSeed || '';
+    verifyClientSeed.value = props.lastClientSeed || '';
+    verifyNonce.value = props.spinNumber.toString();
+
+    // Emit notification
+    emit('copied', { type: 'autofill', label: 'Last spin data auto-populated' });
+  }
+}
 
 // Handle verify button click
 async function handleVerify() {

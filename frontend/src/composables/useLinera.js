@@ -148,7 +148,7 @@ export function useLinera() {
   }
 
   /**
-   * Execute a GraphQL query
+   * Execute a GraphQL query with retry logic
    */
   async function query(graphqlQuery, variables = {}) {
     if (isDemoMode.value) {
@@ -165,17 +165,45 @@ export function useLinera() {
       variables,
     });
 
-    try {
-      const response = await application.value.query(request);
-      return JSON.parse(response);
-    } catch (err) {
-      console.error('Query error:', err);
-      throw err;
+    // Retry query with exponential backoff on connection errors
+    const MAX_QUERY_RETRIES = 3;
+    let lastError = null;
+
+    for (let attempt = 0; attempt <= MAX_QUERY_RETRIES; attempt++) {
+      try {
+        const response = await application.value.query(request);
+        return JSON.parse(response);
+      } catch (err) {
+        lastError = err;
+        const isConnectionError = err.message?.includes('connection') ||
+                                  err.message?.includes('network') ||
+                                  err.message?.includes('timeout');
+
+        // Only retry on connection errors
+        if (!isConnectionError || attempt === MAX_QUERY_RETRIES) {
+          console.error('Query error:', err);
+          throw err;
+        }
+
+        // Wait with exponential backoff before retry
+        const retryDelay = getBackoffDelay(attempt);
+        console.log(`Query failed, retrying in ${retryDelay}ms... (attempt ${attempt + 1}/${MAX_QUERY_RETRIES + 1})`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+
+        // If we've lost connection, try to reconnect
+        if (!isConnected.value) {
+          console.log('Connection lost, attempting to reconnect...');
+          await reconnect();
+        }
+      }
     }
+
+    // If we get here, all retries failed
+    throw lastError || new Error('Query failed after retries');
   }
 
   /**
-   * Execute a GraphQL mutation
+   * Execute a GraphQL mutation with retry logic
    */
   async function mutate(mutation, variables = {}) {
     if (isDemoMode.value) {
@@ -216,13 +244,41 @@ export function useLinera() {
       variables,
     });
 
-    try {
-      const response = await application.value.query(request);
-      return JSON.parse(response);
-    } catch (err) {
-      console.error('Mutation error:', err);
-      throw err;
+    // Retry mutation with exponential backoff on connection errors
+    const MAX_MUTATION_RETRIES = 3;
+    let lastError = null;
+
+    for (let attempt = 0; attempt <= MAX_MUTATION_RETRIES; attempt++) {
+      try {
+        const response = await application.value.query(request);
+        return JSON.parse(response);
+      } catch (err) {
+        lastError = err;
+        const isConnectionError = err.message?.includes('connection') ||
+                                  err.message?.includes('network') ||
+                                  err.message?.includes('timeout');
+
+        // Only retry on connection errors
+        if (!isConnectionError || attempt === MAX_MUTATION_RETRIES) {
+          console.error('Mutation error:', err);
+          throw err;
+        }
+
+        // Wait with exponential backoff before retry
+        const retryDelay = getBackoffDelay(attempt);
+        console.log(`Mutation failed, retrying in ${retryDelay}ms... (attempt ${attempt + 1}/${MAX_MUTATION_RETRIES + 1})`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+
+        // If we've lost connection, try to reconnect
+        if (!isConnected.value) {
+          console.log('Connection lost, attempting to reconnect...');
+          await reconnect();
+        }
+      }
     }
+
+    // If we get here, all retries failed
+    throw lastError || new Error('Mutation failed after retries');
   }
 
   /**

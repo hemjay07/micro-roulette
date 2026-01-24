@@ -1,6 +1,6 @@
 <!-- src/components/RouletteWheel.vue -->
 <template>
-  <div class="relative inline-block">
+  <div class="relative inline-block max-w-full">
     <!-- Outer rim / frame -->
     <div class="absolute inset-0 rounded-full border-8 border-amber-800 shadow-2xl"></div>
 
@@ -14,7 +14,7 @@
       :width="size"
       :height="size"
       :viewBox="`0 0 ${size} ${size}`"
-      class="transform transition-transform"
+      class="transform transition-transform w-full h-auto max-w-full"
       :class="{ 'wheel-spinning': isSpinning }"
       :style="wheelStyle"
     >

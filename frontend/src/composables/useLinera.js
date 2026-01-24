@@ -1,307 +1,257 @@
-// src/composables/useLinera.js
+// Linera Direct GraphQL Integration
+// Direct connection to Linera service - bypasses faucet API issues
+
 import { ref, readonly } from 'vue';
 
-const FAUCET_URL = import.meta.env.VITE_LINERA_FAUCET_URL || 'https://faucet.testnet-conway.linera.net';
-const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true';
+// Use environment variables with fallbacks
+const CHAIN_ID = import.meta.env.VITE_CHAIN_ID || '781078b5a05e20fb1cd13c06622ccc91f813d112f020816e799a9ec1ba4298dc';
+const APP_ID = import.meta.env.VITE_APP_ID || '9b16ccbe34c686f959ad6d3ebe9dde35a1ab7cf73a99a470feae0b082be59059';
+const SERVICE_PORT = import.meta.env.VITE_LINERA_SERVICE_PORT || '8082';
 
-// Reconnection settings
-const MAX_RETRIES = 5;
-const INITIAL_BACKOFF_MS = 1000; // 1 second
-const MAX_BACKOFF_MS = 30000; // 30 seconds
+// Build the GraphQL endpoint URL
+const GRAPHQL_ENDPOINT = `http://localhost:${SERVICE_PORT}/chains/${CHAIN_ID}/applications/${APP_ID}`;
 
 // Demo mode state
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true';
 let demoLastSpinResult = null;
 let demoSpinHistory = [];
 let demoNumberStats = {}; // Track count for each number 0-36
 
-export function useLinera() {
-  const chainId = ref(import.meta.env.VITE_CHAIN_ID || null);
-  const appId = ref(import.meta.env.VITE_APP_ID || null);
-  const isConnected = ref(false);
-  const isConnecting = ref(false);
-  const error = ref(null);
-  const client = ref(null);
-  const faucet = ref(null);
-  const application = ref(null);
-  const isDemoMode = ref(false);
-  const reconnectAttempts = ref(0);
-  const isReconnecting = ref(false);
+// State
+const chainId = ref(CHAIN_ID);
+const appId = ref(APP_ID);
+const isConnected = ref(false);
+const isConnecting = ref(false);
+const isInitialized = ref(false);
+const isDemoMode = ref(DEMO_MODE);
+const wallet = ref({ id: 'mock-wallet-' + Date.now() }); // Mock wallet for UI display
+const client = ref(null);
+const application = ref(null);
+const error = ref(null);
 
-  /**
-   * Calculate exponential backoff delay
-   */
-  function getBackoffDelay(attemptNumber) {
-    const delay = Math.min(
-      INITIAL_BACKOFF_MS * Math.pow(2, attemptNumber),
-      MAX_BACKOFF_MS
-    );
-    return delay;
+// Initialize - just verify the endpoint is reachable
+async function initialize() {
+  if (isInitialized.value) return;
+
+  // If demo mode, skip initialization
+  if (DEMO_MODE) {
+    console.log('DEMO_MODE enabled, using local demo mode');
+    isDemoMode.value = true;
+    chainId.value = chainId.value || 'demo-chain-' + Math.random().toString(36).substring(7);
+    isInitialized.value = true;
+    return true;
   }
 
-  /**
-   * Attempt connection with retry logic
-   */
-  async function attemptConnection() {
-    // Dynamic import of linera-web
-    const linera = await import('@linera/client');
+  try {
+    // Test connection to GraphQL endpoint
+    const response = await fetch(GRAPHQL_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: '{ chainId }' })
+    });
 
-    // Initialize WASM module - try different initialization methods
-    if (typeof linera.default === 'function') {
-      await linera.default();
-    } else if (typeof linera.init === 'function') {
-      await linera.init();
+    if (!response.ok) {
+      throw new Error(`Service unreachable: ${response.status}`);
     }
-    // If neither exists, the module may auto-initialize
 
-    // Create faucet instance
-    if (linera.Faucet) {
-      faucet.value = new linera.Faucet(FAUCET_URL);
-
-      // Create wallet
-      const wallet = await faucet.value.createWallet();
-
-      // Create client
-      client.value = new linera.Client(wallet);
-
-      // Claim a chain from faucet
-      chainId.value = await faucet.value.claimChain(client.value);
-
-      console.log('Connected to Linera');
-      console.log('Chain ID:', chainId.value);
-
-      // Get application handle if APP_ID is set
-      if (appId.value) {
-        application.value = await client.value.frontend().application(appId.value);
-        console.log('Connected to application:', appId.value);
-      }
-
-      return { chainId: chainId.value, appId: appId.value };
-    } else {
-      throw new Error('Linera client not available');
+    const data = await response.json();
+    if (data.errors) {
+      throw new Error(data.errors[0].message);
     }
+
+    isInitialized.value = true;
+    console.log('Linera service connected:', GRAPHQL_ENDPOINT);
+    console.log('Chain ID verified:', data.data.chainId);
+
+    return true;
+  } catch (err) {
+    error.value = `Failed to initialize Linera: ${err.message}`;
+    console.error('Linera init error:', err);
+    throw err;
   }
+}
 
-  /**
-   * Connect to Linera network with retry logic
-   */
-  async function connect() {
-    if (isConnecting.value || isConnected.value) return;
+// Connect to Linera network
+async function connect() {
+  if (isConnecting.value) return; // Prevent double connection attempts
+  isConnecting.value = true;
 
-    isConnecting.value = true;
-    error.value = null;
+  try {
+    await initialize();
 
-    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-      try {
-        const result = await attemptConnection();
+    console.log('Connected to Linera, chain:', chainId.value);
+    console.log('Connected to application:', appId.value);
 
-        // Success - reset reconnect counter and mark as connected
-        reconnectAttempts.value = 0;
-        isConnected.value = true;
-        return result;
-
-      } catch (err) {
-        console.error(`Connection attempt ${attempt + 1}/${MAX_RETRIES + 1} failed:`, err);
-        reconnectAttempts.value = attempt + 1;
-        error.value = err.message;
-
-        // If this was the last attempt, fall back to demo mode
-        if (attempt === MAX_RETRIES) {
-          console.log('All connection attempts failed, falling back to demo mode');
-          isDemoMode.value = true;
-          chainId.value = 'demo-chain-' + Math.random().toString(36).substring(7);
-          isConnected.value = true;
-          error.value = null; // Clear error in demo mode
-          return { chainId: chainId.value, appId: appId.value, demoMode: true };
-        }
-
-        // Wait with exponential backoff before next attempt
-        const backoffDelay = getBackoffDelay(attempt);
-        console.log(`Retrying in ${backoffDelay}ms...`);
-        await new Promise(resolve => setTimeout(resolve, backoffDelay));
-      }
-    }
-
+    isConnected.value = true;
     isConnecting.value = false;
-  }
-
-  /**
-   * Reconnect after disconnection
-   */
-  async function reconnect() {
-    if (isReconnecting.value) return;
-
-    isReconnecting.value = true;
-    isConnected.value = false;
     error.value = null;
 
+    return { chainId: chainId.value, appId: appId.value, demoMode: isDemoMode.value };
+
+  } catch (err) {
+    error.value = `Failed to connect: ${err.message}`;
+    console.error('Connection error:', err);
+    isConnected.value = false;
+    isConnecting.value = false;
+    throw err;
+  }
+}
+
+// Disconnect from Linera network
+function disconnect() {
+  chainId.value = null;
+  wallet.value = null;
+  client.value = null;
+  application.value = null;
+  isConnected.value = false;
+  console.log('Disconnected from Linera');
+}
+
+// Execute a GraphQL query via direct HTTP
+async function query(graphqlQuery, variables = {}) {
+  if (isDemoMode.value) {
+    // Return mock data in demo mode
+    return getMockQueryResponse(graphqlQuery);
+  }
+
+  if (!isConnected.value) {
+    throw new Error('Not connected to Linera service');
+  }
+
+  const request = {
+    query: graphqlQuery,
+    variables,
+  };
+
+  try {
+    const response = await fetch(GRAPHQL_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request)
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    if (data.errors) {
+      console.error('GraphQL errors:', data.errors);
+      throw new Error(data.errors[0].message);
+    }
+
+    return data;
+  } catch (err) {
+    console.error('Query error:', err);
+    throw err;
+  }
+}
+
+// Execute a GraphQL mutation via direct HTTP
+async function mutate(mutation, variables = {}) {
+  if (isDemoMode.value) {
+    // Simulate mutation in demo mode
+    console.log('Demo mode mutation:', mutation, variables);
+
+    // Handle spin mutation - generate random result
+    if (mutation.includes('Spin')) {
+      demoLastSpinResult = Math.floor(Math.random() * 37); // 0-36
+      const RED_NUMBERS = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+      const resultColor = demoLastSpinResult === 0 ? 'green' : (RED_NUMBERS.includes(demoLastSpinResult) ? 'red' : 'black');
+
+      // Add to history
+      demoSpinHistory.unshift({
+        spinId: demoSpinHistory.length + 1,
+        result: demoLastSpinResult,
+        resultColor: resultColor,
+        seedHash: 'demo-seed-' + Math.random().toString(36).substring(7)
+      });
+      if (demoSpinHistory.length > 20) demoSpinHistory.pop();
+
+      // Track number stats
+      demoNumberStats[demoLastSpinResult] = (demoNumberStats[demoLastSpinResult] || 0) + 1;
+
+      console.log('Demo spin result:', demoLastSpinResult, resultColor);
+    }
+
+    return { data: { success: true } };
+  }
+
+  if (!isConnected.value) {
+    throw new Error('Not connected to Linera service');
+  }
+
+  const request = {
+    query: mutation,
+    variables,
+  };
+
+  try {
+    const response = await fetch(GRAPHQL_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request)
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    if (data.errors) {
+      console.error('GraphQL errors:', data.errors);
+      throw new Error(data.errors[0].message);
+    }
+
+    return data;
+  } catch (err) {
+    console.error('Mutation error:', err);
+    throw err;
+  }
+}
+
+// Subscribe to notifications via polling (simplified)
+function onNotification(callback) {
+  console.log('Notification subscription registered (polling mode)');
+
+  // Poll for changes every 3 seconds
+  const pollInterval = setInterval(async () => {
     try {
-      // Reset client state
-      client.value = null;
-      faucet.value = null;
-      application.value = null;
-
-      // Attempt to reconnect
-      await connect();
-    } finally {
-      isReconnecting.value = false;
-    }
-  }
-
-  /**
-   * Execute a GraphQL query with retry logic
-   */
-  async function query(graphqlQuery, variables = {}) {
-    if (isDemoMode.value) {
-      // Return mock data in demo mode
-      return getMockQueryResponse(graphqlQuery);
-    }
-
-    if (!application.value) {
-      throw new Error('Not connected to application');
-    }
-
-    const request = JSON.stringify({
-      query: graphqlQuery,
-      variables,
-    });
-
-    // Retry query with exponential backoff on connection errors
-    const MAX_QUERY_RETRIES = 3;
-    let lastError = null;
-
-    for (let attempt = 0; attempt <= MAX_QUERY_RETRIES; attempt++) {
-      try {
-        const response = await application.value.query(request);
-        return JSON.parse(response);
-      } catch (err) {
-        lastError = err;
-        const isConnectionError = err.message?.includes('connection') ||
-                                  err.message?.includes('network') ||
-                                  err.message?.includes('timeout');
-
-        // Only retry on connection errors
-        if (!isConnectionError || attempt === MAX_QUERY_RETRIES) {
-          console.error('Query error:', err);
-          throw err;
-        }
-
-        // Wait with exponential backoff before retry
-        const retryDelay = getBackoffDelay(attempt);
-        console.log(`Query failed, retrying in ${retryDelay}ms... (attempt ${attempt + 1}/${MAX_QUERY_RETRIES + 1})`);
-        await new Promise(resolve => setTimeout(resolve, retryDelay));
-
-        // If we've lost connection, try to reconnect
-        if (!isConnected.value) {
-          console.log('Connection lost, attempting to reconnect...');
-          await reconnect();
-        }
-      }
-    }
-
-    // If we get here, all retries failed
-    throw lastError || new Error('Query failed after retries');
-  }
-
-  /**
-   * Execute a GraphQL mutation with retry logic
-   */
-  async function mutate(mutation, variables = {}) {
-    if (isDemoMode.value) {
-      // Simulate mutation in demo mode
-      console.log('Demo mode mutation:', mutation, variables);
-
-      // Handle spin mutation - generate random result
-      if (mutation.includes('Spin')) {
-        demoLastSpinResult = Math.floor(Math.random() * 37); // 0-36
-        const colors = ['red', 'black', 'green'];
-        const RED_NUMBERS = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
-        const resultColor = demoLastSpinResult === 0 ? 'green' : (RED_NUMBERS.includes(demoLastSpinResult) ? 'red' : 'black');
-
-        // Add to history
-        demoSpinHistory.unshift({
-          spinId: demoSpinHistory.length + 1,
-          result: demoLastSpinResult,
-          resultColor: resultColor,
-          seedHash: 'demo-seed-' + Math.random().toString(36).substring(7)
+      const result = await query('{ tableStatus { status spinNumber } }');
+      if (result.data) {
+        callback({
+          reason: { NewBlock: { height: Date.now() } },
+          data: result.data
         });
-        if (demoSpinHistory.length > 20) demoSpinHistory.pop();
-
-        // Track number stats
-        demoNumberStats[demoLastSpinResult] = (demoNumberStats[demoLastSpinResult] || 0) + 1;
-
-        console.log('Demo spin result:', demoLastSpinResult, resultColor);
       }
-
-      return { data: { success: true } };
+    } catch (err) {
+      console.error('Notification poll error:', err);
     }
+  }, 3000);
 
-    if (!application.value) {
-      throw new Error('Not connected to application');
-    }
+  // Return cleanup function
+  return () => clearInterval(pollInterval);
+}
 
-    const request = JSON.stringify({
-      query: mutation,
-      variables,
-    });
-
-    // Retry mutation with exponential backoff on connection errors
-    const MAX_MUTATION_RETRIES = 3;
-    let lastError = null;
-
-    for (let attempt = 0; attempt <= MAX_MUTATION_RETRIES; attempt++) {
-      try {
-        const response = await application.value.query(request);
-        return JSON.parse(response);
-      } catch (err) {
-        lastError = err;
-        const isConnectionError = err.message?.includes('connection') ||
-                                  err.message?.includes('network') ||
-                                  err.message?.includes('timeout');
-
-        // Only retry on connection errors
-        if (!isConnectionError || attempt === MAX_MUTATION_RETRIES) {
-          console.error('Mutation error:', err);
-          throw err;
-        }
-
-        // Wait with exponential backoff before retry
-        const retryDelay = getBackoffDelay(attempt);
-        console.log(`Mutation failed, retrying in ${retryDelay}ms... (attempt ${attempt + 1}/${MAX_MUTATION_RETRIES + 1})`);
-        await new Promise(resolve => setTimeout(resolve, retryDelay));
-
-        // If we've lost connection, try to reconnect
-        if (!isConnected.value) {
-          console.log('Connection lost, attempting to reconnect...');
-          await reconnect();
-        }
-      }
-    }
-
-    // If we get here, all retries failed
-    throw lastError || new Error('Mutation failed after retries');
-  }
-
-  /**
-   * Subscribe to notifications (if supported)
-   */
-  function onNotification(callback) {
-    if (application.value && application.value.subscribe) {
-      return application.value.subscribe(callback);
-    }
-    return () => {}; // No-op unsubscribe
-  }
-
+// Export composable
+export function useLinera() {
   return {
+    // State (read-only)
     chainId: readonly(chainId),
     appId: readonly(appId),
     isConnected: readonly(isConnected),
     isConnecting: readonly(isConnecting),
-    isReconnecting: readonly(isReconnecting),
-    reconnectAttempts: readonly(reconnectAttempts),
-    error: readonly(error),
+    isInitialized: readonly(isInitialized),
     isDemoMode: readonly(isDemoMode),
+    wallet: readonly(wallet),
+    error: readonly(error),
+
+    // Methods
+    initialize,
     connect,
-    reconnect,
+    disconnect,
     query,
     mutate,
     onNotification,

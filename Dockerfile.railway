@@ -1,0 +1,46 @@
+# Railway Deployment Dockerfile for MicroRoulette Linera Service
+FROM rust:1.86.0
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    build-essential \
+    pkg-config \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Linera CLI (specific version 0.15.8)
+RUN cargo install linera-service@0.15.8 --locked
+
+# Set working directory
+WORKDIR /app
+
+# Copy compiled WASM contracts
+COPY contracts/target/wasm32-unknown-unknown/release/micro_roulette_contract.wasm ./
+COPY contracts/target/wasm32-unknown-unknown/release/micro_roulette_service.wasm ./
+
+# Copy deployment script
+COPY init.sh ./
+RUN chmod +x init.sh
+
+# Environment variables (will be set in Railway dashboard)
+ENV LINERA_FAUCET_URL=https://faucet.testnet-conway.linera.net
+ENV APP_ID=9b16ccbe34c686f959ad6d3ebe9dde35a1ab7cf73a99a470feae0b082be59059
+ENV CHAIN_ID=781078b5a05e20fb1cd13c06622ccc91f813d112f020816e799a9ec1ba4298dc
+ENV LINERA_SERVICE_PORT=8082
+ENV RUST_LOG=info
+
+# Expose port for GraphQL service
+EXPOSE 8082
+
+# Initialize wallet and start Linera service
+CMD ["/bin/bash", "-c", "\
+    echo '🚀 Starting Linera MicroRoulette Service on Railway...' && \
+    export LINERA_WALLET=/root/.config/linera/wallet.json && \
+    export LINERA_STORAGE=rocksdb:/root/.config/linera/storage.db && \
+    mkdir -p /root/.config/linera && \
+    echo '📝 Initializing Linera wallet...' && \
+    linera wallet init --faucet-url $LINERA_FAUCET_URL --with-new-chain && \
+    echo '🔗 Importing existing application...' && \
+    linera service --port $LINERA_SERVICE_PORT \
+"]

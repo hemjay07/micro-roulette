@@ -1,0 +1,26 @@
+{
+  "version": 2,
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "outputDirectory": "frontend/dist",
+  "framework": null,
+  "installCommand": "cd frontend && npm install",
+  "devCommand": "cd frontend && npm run dev",
+  "env": {
+    "VITE_LINERA_FAUCET_URL": "https://faucet.testnet-conway.linera.net",
+    "VITE_APP_ID": "9b16ccbe34c686f959ad6d3ebe9dde35a1ab7cf73a99a470feae0b082be59059",
+    "VITE_CHAIN_ID": "781078b5a05e20fb1cd13c06622ccc91f813d112f020816e799a9ec1ba4298dc",
+    "VITE_LINERA_SERVICE_PORT": "8082",
+    "VITE_DEMO_MODE": "true"
+  },
+  "routes": [
+    {
+      "src": "/assets/(.*)",
+      "headers": { "cache-control": "public, max-age=31536000, immutable" },
+      "dest": "/assets/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
+}

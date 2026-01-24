@@ -66,7 +66,7 @@ impl Contract for RouletteContract {
         self.state.round_total.set(Amount::ZERO);
 
         // Set betting deadline (30 seconds from now)
-        let deadline = self.now().saturating_add(TimeDelta::microseconds((BETTING_TIME_SECONDS * 1_000_000) as i64));
+        let deadline = self.now().saturating_add(TimeDelta::from_micros(BETTING_TIME_SECONDS * 1_000_000));
         self.state.betting_deadline.set(Some(deadline));
         self.state.total_volume.set(Amount::ZERO);
         self.state.total_payouts.set(Amount::ZERO);
@@ -194,7 +194,7 @@ impl RouletteContract {
     }
 
     /// Get current system time
-    fn now(&self) -> Timestamp {
+    fn now(&mut self) -> Timestamp {
         self.runtime.system_time()
     }
 
@@ -527,7 +527,7 @@ impl RouletteContract {
         self.state.status.set(TableStatus::Open);
 
         // Set betting deadline (30 seconds from now)
-        let deadline = self.now().saturating_add(TimeDelta::microseconds((BETTING_TIME_SECONDS * 1_000_000) as i64));
+        let deadline = self.now().saturating_add(TimeDelta::from_micros(BETTING_TIME_SECONDS * 1_000_000));
         self.state.betting_deadline.set(Some(deadline));
 
         log::info!("New round opened, spin #{}", self.state.spin_number.get());
@@ -569,7 +569,7 @@ impl RouletteContract {
         } else {
             self.state.status.set(TableStatus::Open);
             // Set betting deadline (30 seconds from now)
-            let deadline = self.now().saturating_add(TimeDelta::microseconds((BETTING_TIME_SECONDS * 1_000_000) as i64));
+            let deadline = self.now().saturating_add(TimeDelta::from_micros(BETTING_TIME_SECONDS * 1_000_000));
             self.state.betting_deadline.set(Some(deadline));
             log::info!("Admin unpaused the contract");
         }

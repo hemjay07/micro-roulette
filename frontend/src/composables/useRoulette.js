@@ -29,37 +29,25 @@ export function useRoulette(query, mutate) {
     try {
       const result = await query(`
         query {
-          tableStatus {
-            status
-            spinNumber
-            roundTotal
-            isBettingOpen
-          }
+          tableStatus
+          spinNumber
+          roundTotal
+          isBettingOpen
           config {
             minBet
             maxBet
             maxTotalBet
             houseEdgeBps
           }
-          spinHistory(limit: 20) {
-            spinId
-            result
-            resultColor
-            seedHash
-          }
           hotNumbers
           coldNumbers
-          lastSpin {
-            spinId
-            result
-            resultColor
-            seedHash
-          }
+          lastResult
           fairnessInfo {
-            nextSeedHash
-            currentSeed
+            serverSeedHash
+            revealedServerSeed
             lastClientSeed
             lastResult
+            canVerify
           }
         }
       `);
@@ -67,18 +55,23 @@ export function useRoulette(query, mutate) {
       if (result.data) {
         const data = result.data;
 
+        // tableStatus is now a plain string
         if (data.tableStatus) {
-          tableStatus.value = data.tableStatus.status;
-          spinNumber.value = parseInt(data.tableStatus.spinNumber);
-          roundTotal.value = data.tableStatus.roundTotal;
+          tableStatus.value = data.tableStatus;
+        }
+
+        // spinNumber is now a separate field
+        if (data.spinNumber !== undefined) {
+          spinNumber.value = data.spinNumber;
+        }
+
+        // roundTotal is now a separate field
+        if (data.roundTotal) {
+          roundTotal.value = data.roundTotal;
         }
 
         if (data.config) {
           config.value = data.config;
-        }
-
-        if (data.spinHistory) {
-          spinHistory.value = data.spinHistory;
         }
 
         if (data.hotNumbers) {
@@ -89,8 +82,8 @@ export function useRoulette(query, mutate) {
           coldNumbers.value = data.coldNumbers;
         }
 
-        if (data.lastSpin) {
-          lastResult.value = data.lastSpin.result;
+        if (data.lastResult !== undefined) {
+          lastResult.value = data.lastResult;
         }
 
         if (data.fairnessInfo) {

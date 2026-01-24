@@ -288,6 +288,7 @@ async function handleSpin() {
 function onSpinComplete(result) {
   // Calculate winnings
   let totalWin = 0;
+
   for (const bet of currentBets.value) {
     if (checkBetWin(bet, result)) {
       const multiplier = getPayoutMultiplier(bet.type);

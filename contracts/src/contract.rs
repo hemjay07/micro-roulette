@@ -134,7 +134,7 @@ impl Contract for RouletteContract {
             Message::BetConfirmed { player, bet_type, amount, round_total } => {
                 // Acknowledge bet was placed successfully
                 log::info!(
-                    "BetConfirmed: player={:?}, bet_type={}, amount={:?}, round_total={:?}",
+                    "BetConfirmed: player={:?}, bet_type={:?}, amount={:?}, round_total={:?}",
                     player, bet_type, amount, round_total
                 );
 
@@ -214,7 +214,7 @@ impl RouletteContract {
         log::info!("Player {:?} withdrew {:?}", player, amount);
     }
 
-    async fn place_bet(&mut self, bet_type: u8, amount: Amount) {
+    async fn place_bet(&mut self, bet_type: BetType, amount: Amount) {
         // Check if platform is paused
         let paused = *self.state.paused.get();
         assert!(!paused, "Platform is paused");
@@ -226,8 +226,7 @@ impl RouletteContract {
         let player = self.signer();
 
         // Validate bet type
-        let bt = BetType::new(bet_type).expect("Invalid bet type");
-        assert!(bt.is_valid(), "Invalid bet type");
+        assert!(bet_type.is_valid(), "Invalid bet type");
 
         // Check bet amount is within limits
         let min_bet = *self.state.min_bet.get();
@@ -278,7 +277,7 @@ impl RouletteContract {
         stats.record_bet(amount);
         let _ = self.state.player_stats.insert(&player, stats);
 
-        log::info!("Player {:?} placed bet: type={}, amount={:?}", player, bet_type, amount);
+        log::info!("Player {:?} placed bet: type={:?}, amount={:?}", player, bet_type, amount);
     }
 
     async fn clear_bets(&mut self) {

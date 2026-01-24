@@ -114,134 +114,125 @@ impl RouletteNumber {
 // BET TYPE
 // ============================================================================
 
-/// Types of bets a player can make (encoded as u8 for simplicity)
-/// 0 = Red, 1 = Black, 2 = Odd, 3 = Even, 4 = Low (1-18), 5 = High (19-36)
-/// 6 = Dozen 1, 7 = Dozen 2, 8 = Dozen 3
-/// 9 = Column 1, 10 = Column 2, 11 = Column 3
-/// 12-48 = Straight bet on number (bet_type - 12)
-/// 49-59 = SixLine bets (bet_type - 49 = starting number: 1, 4, 7, ... 31)
-///         Six-line covers 6 numbers in two adjacent rows
+/// Types of bets a player can make
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
-pub struct BetType(pub u8);
+pub enum BetType {
+    // Inside bets (higher payout, lower odds)
+    /// Single number (0-36), pays 35:1
+    Straight(u8),
+    /// Two adjacent numbers, pays 17:1
+    Split(u8, u8),
+    /// Row of 3 (street), pays 11:1. Value is the starting number (1, 4, 7, etc.)
+    Street(u8),
+    /// Four numbers (corner), pays 8:1
+    Corner(u8, u8, u8, u8),
+    /// Two rows (6 numbers), pays 5:1. Value is the starting row (1, 4, 7, etc.)
+    SixLine(u8),
+
+    // Outside bets (lower payout, higher odds)
+    /// Red numbers, pays 1:1
+    Red,
+    /// Black numbers, pays 1:1
+    Black,
+    /// Odd numbers, pays 1:1
+    Odd,
+    /// Even numbers, pays 1:1
+    Even,
+    /// Low (1-18), pays 1:1
+    Low,
+    /// High (19-36), pays 1:1
+    High,
+    /// Dozen (1=1-12, 2=13-24, 3=25-36), pays 2:1
+    Dozen(u8),
+    /// Column (1, 2, or 3), pays 2:1
+    Column(u8),
+}
 
 impl BetType {
-    pub const RED: u8 = 0;
-    pub const BLACK: u8 = 1;
-    pub const ODD: u8 = 2;
-    pub const EVEN: u8 = 3;
-    pub const LOW: u8 = 4;
-    pub const HIGH: u8 = 5;
-    pub const DOZEN_1: u8 = 6;
-    pub const DOZEN_2: u8 = 7;
-    pub const DOZEN_3: u8 = 8;
-    pub const COLUMN_1: u8 = 9;
-    pub const COLUMN_2: u8 = 10;
-    pub const COLUMN_3: u8 = 11;
-    pub const STRAIGHT_OFFSET: u8 = 12;
-    pub const SIXLINE_OFFSET: u8 = 49;
-
-    /// Create a new bet type
-    pub fn new(value: u8) -> Option<Self> {
-        if value <= 59 {
-            Some(Self(value))
-        } else {
-            None
-        }
-    }
-
-    /// Check if this bet type is valid
-    pub fn is_valid(&self) -> bool {
-        match self.0 {
-            0..=48 => true,  // Outside bets + straight bets
-            49..=59 => {
-                // SixLine: valid starting numbers are 1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31
-                let start = self.sixline_start();
-                start >= 1 && start <= 31 && (start - 1) % 3 == 0
-            }
-            _ => false,
-        }
-    }
-
-    /// Get the starting number for a SixLine bet
-    fn sixline_start(&self) -> u8 {
-        if self.0 >= Self::SIXLINE_OFFSET {
-            let idx = self.0 - Self::SIXLINE_OFFSET;
-            1 + (idx * 3)  // 1, 4, 7, 10, ... 31
-        } else {
-            0
-        }
-    }
-
     /// Returns the payout multiplier for this bet type (not including original bet)
     pub fn payout_multiplier(&self) -> u64 {
-        match self.0 {
-            0..=5 => 1,      // Red, Black, Odd, Even, Low, High - pays 1:1
-            6..=8 => 2,      // Dozens - pays 2:1
-            9..=11 => 2,     // Columns - pays 2:1
-            12..=48 => 35,   // Straight - pays 35:1
-            49..=59 => 5,    // SixLine - pays 5:1
-            _ => 0,
+        match self {
+            BetType::Straight(_) => 35,
+            BetType::Split(_, _) => 17,
+            BetType::Street(_) => 11,
+            BetType::Corner(_, _, _, _) => 8,
+            BetType::SixLine(_) => 5,
+            BetType::Red | BetType::Black => 1,
+            BetType::Odd | BetType::Even => 1,
+            BetType::Low | BetType::High => 1,
+            BetType::Dozen(_) | BetType::Column(_) => 2,
         }
     }
 
     /// Check if this bet wins for a given number
     pub fn is_winner(&self, result: RouletteNumber) -> bool {
-        match self.0 {
-            0 => result.is_red(),
-            1 => result.is_black(),
-            2 => result.is_odd(),
-            3 => result.is_even(),
-            4 => result.is_low(),
-            5 => result.is_high(),
-            6 => result.dozen() == Some(1),
-            7 => result.dozen() == Some(2),
-            8 => result.dozen() == Some(3),
-            9 => result.column() == Some(1),
-            10 => result.column() == Some(2),
-            11 => result.column() == Some(3),
-            n if n >= 12 && n <= 48 => result.0 == (n - 12),
-            n if n >= 49 && n <= 59 => {
-                // SixLine: covers 6 consecutive numbers in two rows
-                // e.g., start=1 covers 1,2,3,4,5,6
-                let start = self.sixline_start();
-                result.0 >= start && result.0 <= start + 5
+        match self {
+            BetType::Straight(n) => result.0 == *n,
+            BetType::Split(a, b) => result.0 == *a || result.0 == *b,
+            BetType::Street(start) => {
+                let s = *start;
+                result.0 >= s && result.0 < s + 3 && !result.is_zero()
             }
-            _ => false,
+            BetType::Corner(a, b, c, d) => {
+                result.0 == *a || result.0 == *b || result.0 == *c || result.0 == *d
+            }
+            BetType::SixLine(start) => {
+                let s = *start;
+                result.0 >= s && result.0 < s + 6 && !result.is_zero()
+            }
+            BetType::Red => result.is_red(),
+            BetType::Black => result.is_black(),
+            BetType::Odd => result.is_odd(),
+            BetType::Even => result.is_even(),
+            BetType::Low => result.is_low(),
+            BetType::High => result.is_high(),
+            BetType::Dozen(d) => result.dozen() == Some(*d),
+            BetType::Column(c) => result.column() == Some(*c),
         }
     }
 
-    /// Get display name for this bet type
+    /// Validate that the bet type parameters are valid
+    pub fn is_valid(&self) -> bool {
+        match self {
+            BetType::Straight(n) => *n <= 36,
+            BetType::Split(a, b) => *a <= 36 && *b <= 36 && Self::are_adjacent(*a, *b),
+            BetType::Street(start) => *start >= 1 && *start <= 34 && (*start - 1) % 3 == 0,
+            BetType::Corner(a, b, c, d) => {
+                *a <= 36 && *b <= 36 && *c <= 36 && *d <= 36 && *a > 0
+            }
+            BetType::SixLine(start) => *start >= 1 && *start <= 31 && (*start - 1) % 3 == 0,
+            BetType::Dozen(d) => *d >= 1 && *d <= 3,
+            BetType::Column(c) => *c >= 1 && *c <= 3,
+            _ => true,
+        }
+    }
+
+    /// Check if two numbers are adjacent on the betting board
+    fn are_adjacent(a: u8, b: u8) -> bool {
+        if a == 0 || b == 0 {
+            return false;
+        }
+        let diff = if a > b { a - b } else { b - a };
+        // Adjacent horizontally (diff = 1) or vertically (diff = 3)
+        diff == 1 || diff == 3
+    }
+
+    /// Get a display name for this bet type
     pub fn display_name(&self) -> String {
-        match self.0 {
-            0 => "Red".to_string(),
-            1 => "Black".to_string(),
-            2 => "Odd".to_string(),
-            3 => "Even".to_string(),
-            4 => "1-18".to_string(),
-            5 => "19-36".to_string(),
-            6 => "1st Dozen".to_string(),
-            7 => "2nd Dozen".to_string(),
-            8 => "3rd Dozen".to_string(),
-            9 => "Column 1".to_string(),
-            10 => "Column 2".to_string(),
-            11 => "Column 3".to_string(),
-            n if n >= 12 && n <= 48 => format!("{}", n - 12),
-            n if n >= 49 && n <= 59 => {
-                let start = self.sixline_start();
-                format!("Six Line {}-{}", start, start + 5)
-            }
-            _ => "Invalid".to_string(),
-        }
-    }
-
-    /// Create a SixLine bet from starting number (1, 4, 7, ... 31)
-    pub fn sixline(start: u8) -> Option<Self> {
-        // Valid starts: 1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31
-        if start >= 1 && start <= 31 && (start - 1) % 3 == 0 {
-            let idx = (start - 1) / 3;
-            Some(Self(Self::SIXLINE_OFFSET + idx))
-        } else {
-            None
+        match self {
+            BetType::Straight(n) => format!("Straight {}", n),
+            BetType::Split(a, b) => format!("Split {}/{}", a, b),
+            BetType::Street(s) => format!("Street {}-{}", s, s + 2),
+            BetType::Corner(a, b, c, d) => format!("Corner {}/{}/{}/{}", a, b, c, d),
+            BetType::SixLine(s) => format!("Six Line {}-{}", s, s + 5),
+            BetType::Red => "Red".to_string(),
+            BetType::Black => "Black".to_string(),
+            BetType::Odd => "Odd".to_string(),
+            BetType::Even => "Even".to_string(),
+            BetType::Low => "1-18".to_string(),
+            BetType::High => "19-36".to_string(),
+            BetType::Dozen(d) => format!("Dozen {}", d),
+            BetType::Column(c) => format!("Column {}", c),
         }
     }
 }
@@ -260,11 +251,10 @@ pub struct Bet {
 }
 
 impl Bet {
-    /// Create a new bet
-    pub fn new(bet_type: u8, amount: Amount) -> Option<Self> {
-        let bt = BetType::new(bet_type)?;
-        if bt.is_valid() && amount > Amount::ZERO {
-            Some(Self { bet_type: bt, amount })
+    /// Create a new bet, returning None if invalid
+    pub fn new(bet_type: BetType, amount: Amount) -> Option<Self> {
+        if bet_type.is_valid() && amount > Amount::ZERO {
+            Some(Self { bet_type, amount })
         } else {
             None
         }
@@ -635,33 +625,50 @@ mod tests {
 
     // BetType tests
     #[test]
-    fn test_bet_type_creation() {
-        assert!(BetType::new(0).is_some());
-        assert!(BetType::new(48).is_some());
-        assert!(BetType::new(49).is_none());
+    fn test_bet_type_validation() {
+        // Valid bet types
+        assert!(BetType::Straight(0).is_valid());
+        assert!(BetType::Straight(36).is_valid());
+        assert!(!BetType::Straight(37).is_valid());
+
+        // Split adjacency
+        assert!(BetType::Split(1, 2).is_valid()); // horizontal
+        assert!(BetType::Split(1, 4).is_valid()); // vertical
+        assert!(!BetType::Split(1, 5).is_valid()); // diagonal
+        assert!(!BetType::Split(1, 36).is_valid()); // not adjacent
+
+        // Dozens and columns
+        assert!(BetType::Dozen(1).is_valid());
+        assert!(BetType::Dozen(3).is_valid());
+        assert!(!BetType::Dozen(4).is_valid());
+        assert!(BetType::Column(1).is_valid());
+        assert!(!BetType::Column(4).is_valid());
     }
 
     #[test]
     fn test_bet_type_payouts() {
         // Even money bets pay 1:1
-        assert_eq!(BetType::new(BetType::RED).unwrap().payout_multiplier(), 1);
-        assert_eq!(BetType::new(BetType::BLACK).unwrap().payout_multiplier(), 1);
-        assert_eq!(BetType::new(BetType::ODD).unwrap().payout_multiplier(), 1);
-        assert_eq!(BetType::new(BetType::EVEN).unwrap().payout_multiplier(), 1);
-        assert_eq!(BetType::new(BetType::LOW).unwrap().payout_multiplier(), 1);
-        assert_eq!(BetType::new(BetType::HIGH).unwrap().payout_multiplier(), 1);
+        assert_eq!(BetType::Red.payout_multiplier(), 1);
+        assert_eq!(BetType::Black.payout_multiplier(), 1);
+        assert_eq!(BetType::Odd.payout_multiplier(), 1);
+        assert_eq!(BetType::Even.payout_multiplier(), 1);
+        assert_eq!(BetType::Low.payout_multiplier(), 1);
+        assert_eq!(BetType::High.payout_multiplier(), 1);
 
         // Dozens and columns pay 2:1
-        assert_eq!(BetType::new(BetType::DOZEN_1).unwrap().payout_multiplier(), 2);
-        assert_eq!(BetType::new(BetType::DOZEN_2).unwrap().payout_multiplier(), 2);
-        assert_eq!(BetType::new(BetType::DOZEN_3).unwrap().payout_multiplier(), 2);
-        assert_eq!(BetType::new(BetType::COLUMN_1).unwrap().payout_multiplier(), 2);
-        assert_eq!(BetType::new(BetType::COLUMN_2).unwrap().payout_multiplier(), 2);
-        assert_eq!(BetType::new(BetType::COLUMN_3).unwrap().payout_multiplier(), 2);
+        assert_eq!(BetType::Dozen(1).payout_multiplier(), 2);
+        assert_eq!(BetType::Dozen(2).payout_multiplier(), 2);
+        assert_eq!(BetType::Dozen(3).payout_multiplier(), 2);
+        assert_eq!(BetType::Column(1).payout_multiplier(), 2);
+        assert_eq!(BetType::Column(2).payout_multiplier(), 2);
+        assert_eq!(BetType::Column(3).payout_multiplier(), 2);
 
-        // Straight bets pay 35:1
-        assert_eq!(BetType::new(BetType::STRAIGHT_OFFSET).unwrap().payout_multiplier(), 35);
-        assert_eq!(BetType::new(BetType::STRAIGHT_OFFSET + 17).unwrap().payout_multiplier(), 35);
+        // Inside bets
+        assert_eq!(BetType::Straight(17).payout_multiplier(), 35);
+        assert_eq!(BetType::Split(1, 2).payout_multiplier(), 17);
+        assert_eq!(BetType::Street(1).payout_multiplier(), 11);
+        assert_eq!(BetType::Corner(1, 2, 4, 5).payout_multiplier(), 8);
+        assert_eq!(BetType::SixLine(1).payout_multiplier(), 5);
     }
 
     #[test]
@@ -670,22 +677,46 @@ mod tests {
         let black_20 = RouletteNumber::new(20).unwrap();
         let zero = RouletteNumber::new(0).unwrap();
 
-        // Red/Black
-        assert!(BetType::new(BetType::BLACK).unwrap().is_winner(red_17)); // 17 is actually black!
-        assert!(!BetType::new(BetType::RED).unwrap().is_winner(red_17));
-        assert!(BetType::new(BetType::BLACK).unwrap().is_winner(black_20));
-        assert!(!BetType::new(BetType::RED).unwrap().is_winner(zero));
-        assert!(!BetType::new(BetType::BLACK).unwrap().is_winner(zero));
+        // Red/Black (17 is black in European roulette)
+        assert!(BetType::Black.is_winner(red_17));
+        assert!(!BetType::Red.is_winner(red_17));
+        assert!(BetType::Black.is_winner(black_20));
+        assert!(!BetType::Red.is_winner(zero));
+        assert!(!BetType::Black.is_winner(zero));
 
         // Odd/Even
-        assert!(BetType::new(BetType::ODD).unwrap().is_winner(red_17));
-        assert!(!BetType::new(BetType::EVEN).unwrap().is_winner(red_17));
-        assert!(BetType::new(BetType::EVEN).unwrap().is_winner(black_20));
+        assert!(BetType::Odd.is_winner(red_17));
+        assert!(!BetType::Even.is_winner(red_17));
+        assert!(BetType::Even.is_winner(black_20));
 
         // Straight
-        assert!(BetType::new(BetType::STRAIGHT_OFFSET + 17).unwrap().is_winner(red_17));
-        assert!(!BetType::new(BetType::STRAIGHT_OFFSET + 18).unwrap().is_winner(red_17));
-        assert!(BetType::new(BetType::STRAIGHT_OFFSET).unwrap().is_winner(zero)); // Bet on 0
+        assert!(BetType::Straight(17).is_winner(red_17));
+        assert!(!BetType::Straight(18).is_winner(red_17));
+        assert!(BetType::Straight(0).is_winner(zero));
+
+        // Split
+        assert!(BetType::Split(17, 20).is_winner(red_17));
+        assert!(BetType::Split(17, 20).is_winner(black_20));
+        assert!(!BetType::Split(17, 20).is_winner(zero));
+
+        // Street
+        assert!(BetType::Street(1).is_winner(RouletteNumber::new(1).unwrap()));
+        assert!(BetType::Street(1).is_winner(RouletteNumber::new(2).unwrap()));
+        assert!(!BetType::Street(1).is_winner(RouletteNumber::new(4).unwrap()));
+
+        // Corner
+        let corner_bet = BetType::Corner(1, 2, 4, 5);
+        assert!(corner_bet.is_winner(RouletteNumber::new(1).unwrap()));
+        assert!(corner_bet.is_winner(RouletteNumber::new(2).unwrap()));
+        assert!(corner_bet.is_winner(RouletteNumber::new(4).unwrap()));
+        assert!(corner_bet.is_winner(RouletteNumber::new(5).unwrap()));
+        assert!(!corner_bet.is_winner(RouletteNumber::new(3).unwrap()));
+
+        // SixLine
+        let sixline_bet = BetType::SixLine(1);
+        assert!(sixline_bet.is_winner(RouletteNumber::new(1).unwrap()));
+        assert!(sixline_bet.is_winner(RouletteNumber::new(6).unwrap()));
+        assert!(!sixline_bet.is_winner(RouletteNumber::new(7).unwrap()));
     }
 
     // FairnessProof tests

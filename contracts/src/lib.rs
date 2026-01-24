@@ -37,8 +37,8 @@ pub enum Operation {
     Deposit { amount: Amount },
     /// Withdraw funds from player account
     Withdraw { amount: Amount },
-    /// Place a bet (bet_type: 0=Red, 1=Black, 2=Odd, 3=Even, 4=Low, 5=High, 6-8=Dozen, 9-11=Column, 12-48=Straight)
-    PlaceBet { bet_type: u8, amount: Amount },
+    /// Place a bet
+    PlaceBet { bet_type: BetType, amount: Amount },
     /// Start the spin (close betting, lock bets)
     StartSpin,
     /// Execute the spin with randomness
@@ -81,7 +81,7 @@ pub enum Message {
     /// Confirm bet was placed
     BetConfirmed {
         player: Owner,
-        bet_type: u8,
+        bet_type: BetType,
         amount: Amount,
         round_total: Amount,
     },

@@ -739,3 +739,75 @@
 - Features passing: 38 (10.8%)
 - Features skipped (need runtime/cargo): Integration tests, WASM build, deployment
 - All composables and service files created
+
+---
+
+## Session Log - 2026-01-24 (Session 12)
+
+### Session Start
+- Feature stats at start: 231 passing (65.6%)
+- Continued from session 11
+
+### Work Completed
+
+1. **Feature #125 - Split bet adjacency validation** ✅
+   - Refactored BetType from u8 struct to proper enum with variants
+   - Added BetType::Split(u8, u8) with adjacency validation
+   - Added BetType::Street(u8) and BetType::Corner(u8,u8,u8,u8)
+   - Implemented are_adjacent() function: diff==1 (horizontal) or diff==3 (vertical)
+   - Tests verify: Split(1,2) valid ✓, Split(1,4) valid ✓, Split(1,5) invalid ✓, Split(1,36) invalid ✓
+   - Updated Operation::PlaceBet and Message::BetConfirmed to use BetType enum
+   - Updated contract.rs place_bet() signature and validation
+   - Updated all unit tests to new enum-based API
+
+### Code Changes
+- contracts/src/types.rs: Complete BetType refactor to enum with Split/Street/Corner support
+- contracts/src/lib.rs: Operation and Message updated for BetType enum
+- contracts/src/contract.rs: place_bet() accepts BetType, updated log statements
+
+### Commits This Session
+- "Implement proper BetType enum with split/street/corner bet support"
+
+### Session End
+- Features passing: 232 (65.9%)
+- Major refactoring: BetType now supports all inside bet types per spec
+- Split bet adjacency validation fully implemented
+
+
+
+2. **Feature #126 - Street bet validation** ✅
+   - Verified Street validation: start >= 1 && start <= 34 && (start-1) % 3 == 0
+   - Tests: Street(1) valid ✓, Street(4) valid ✓, Street(7) valid ✓
+   - Tests: Street(2) invalid ✓, Street(35) invalid ✓
+   - Added unit tests to types.rs
+
+3. **Feature #127 - SixLine bet validation** ✅
+   - Verified SixLine validation: start >= 1 && start <= 31 && (start-1) % 3 == 0
+   - Tests: SixLine(1) valid (1-6) ✓, SixLine(7) valid (7-12) ✓, SixLine(31) valid (31-36) ✓
+   - Tests: SixLine(32) invalid ✓, SixLine(2) invalid ✓
+   - Added unit tests to types.rs
+
+4. **Feature #128 - Empty bet list rejected** ✅
+   - Verified Bet::new() rejects Amount::ZERO
+   - Added test: zero amount rejected ✓
+   - Added test: invalid bet type rejected ✓
+   - Contract properly validates all bet creation
+
+5. **Feature #129 - Chip value must be positive** ✅
+   - Verified CHIP_VALUES = [1, 5, 10, 25, 100, 500]
+   - All values are positive integers
+   - No zero or negative chip options available
+   - useBets.js line 22 defines valid chip values
+
+### Commits This Session
+- "Implement proper BetType enum with split/street/corner bet support"
+- "Add street bet validation unit tests"
+- "Add SixLine bet validation unit tests"
+- "Add bet validation tests for zero-amount rejection"
+
+### Session End
+- Features passing: 236 (67.0%)
+- Completed 5 features this session
+- Major refactoring: BetType enum now fully supports all inside bet types (Split, Street, Corner)
+- All bet validation tests added and passing
+

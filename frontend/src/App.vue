@@ -102,6 +102,9 @@
       <FairnessVerifier
         :next-seed-hash="lastSpinProof?.nextSeedHash"
         :current-seed="lastSpinProof?.currentSeed"
+        :last-client-seed="lastSpinProof?.lastClientSeed"
+        :last-result="lastSpinProof?.lastResult"
+        :spin-number="spinNumber"
         @verify="handleVerifyFairness"
         class="mt-8"
       />

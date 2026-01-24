@@ -63,6 +63,58 @@
           </button>
         </div>
       </div>
+
+      <!-- Last Client Seed -->
+      <div class="bg-black/30 rounded-lg p-3">
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-gray-400">Last Client Seed</span>
+          <span v-if="lastClientSeed" class="text-[10px] px-2 py-0.5 bg-blue-600/30 text-blue-400 rounded">CLIENT</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <div class="font-mono text-sm text-gray-400 mt-1 truncate flex-1">
+            {{ lastClientSeed || 'Available after first spin' }}
+          </div>
+          <button
+            v-if="lastClientSeed"
+            @click="copyToClipboard(lastClientSeed, 'clientSeed')"
+            class="p-1 hover:bg-green-900/30 rounded transition-colors flex-shrink-0"
+            :title="copiedClientSeed ? 'Copied!' : 'Copy client seed'"
+          >
+            <svg v-if="!copiedClientSeed" class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            <svg v-else class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Nonce (Spin Number) -->
+      <div class="bg-black/30 rounded-lg p-3">
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-gray-400">Nonce (Spin Number)</span>
+          <span v-if="spinNumber > 0" class="text-[10px] px-2 py-0.5 bg-purple-600/30 text-purple-400 rounded">NONCE</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <div class="font-mono text-sm text-gray-400 mt-1 flex-1">
+            {{ spinNumber > 0 ? spinNumber : 'Available after first spin' }}
+          </div>
+          <button
+            v-if="spinNumber > 0"
+            @click="copyToClipboard(spinNumber.toString(), 'nonce')"
+            class="p-1 hover:bg-green-900/30 rounded transition-colors flex-shrink-0"
+            :title="copiedNonce ? 'Copied!' : 'Copy nonce'"
+          >
+            <svg v-if="!copiedNonce" class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            <svg v-else class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Verification Form -->
@@ -193,6 +245,18 @@ const props = defineProps({
   currentSeed: {
     type: String,
     default: null
+  },
+  lastClientSeed: {
+    type: String,
+    default: null
+  },
+  lastResult: {
+    type: Number,
+    default: null
+  },
+  spinNumber: {
+    type: Number,
+    default: 0
   }
 });
 
@@ -209,6 +273,8 @@ const showHowItWorks = ref(false);
 // Copy state
 const copiedNextHash = ref(false);
 const copiedCurrentSeed = ref(false);
+const copiedClientSeed = ref(false);
+const copiedNonce = ref(false);
 
 // Check if verification form is complete
 const canVerify = computed(() => {
@@ -265,6 +331,12 @@ async function copyToClipboard(text, type) {
     } else if (type === 'currentSeed') {
       copiedCurrentSeed.value = true;
       setTimeout(() => { copiedCurrentSeed.value = false; }, 2000);
+    } else if (type === 'clientSeed') {
+      copiedClientSeed.value = true;
+      setTimeout(() => { copiedClientSeed.value = false; }, 2000);
+    } else if (type === 'nonce') {
+      copiedNonce.value = true;
+      setTimeout(() => { copiedNonce.value = false; }, 2000);
     }
   } catch (err) {
     console.error('Failed to copy:', err);

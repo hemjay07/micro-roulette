@@ -58,6 +58,8 @@ export function useRoulette(query, mutate) {
           fairnessInfo {
             nextSeedHash
             currentSeed
+            lastClientSeed
+            lastResult
           }
         }
       `);

@@ -209,6 +209,7 @@ impl RouletteContract {
     }
 
     async fn withdraw(&mut self, amount: Amount) {
+        assert!(amount > Amount::ZERO, "Withdrawal amount must be positive");
         let player = self.signer();
         let success = self.debit(&player, amount).await;
         assert!(success, "Insufficient balance");

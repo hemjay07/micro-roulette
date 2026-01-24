@@ -644,6 +644,13 @@ mod tests {
         assert!(!BetType::Street(2).is_valid()); // not a street start
         assert!(!BetType::Street(35).is_valid()); // incomplete street (only 35, 36)
 
+        // SixLine validation
+        assert!(BetType::SixLine(1).is_valid()); // valid (covers 1-6)
+        assert!(BetType::SixLine(7).is_valid()); // valid (covers 7-12)
+        assert!(BetType::SixLine(31).is_valid()); // valid (covers 31-36)
+        assert!(!BetType::SixLine(32).is_valid()); // would go past 36
+        assert!(!BetType::SixLine(2).is_valid()); // not a valid start
+
         // Dozens and columns
         assert!(BetType::Dozen(1).is_valid());
         assert!(BetType::Dozen(3).is_valid());

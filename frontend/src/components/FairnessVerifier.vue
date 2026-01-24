@@ -227,8 +227,23 @@
           <strong class="text-gray-400">3. Reveal:</strong> After betting closes, the server seed is revealed and combined with the client seed.
         </p>
         <p>
-          <strong class="text-gray-400">4. Verify:</strong> SHA-256(server_seed || client_seed || nonce) % 37 = result. Anyone can verify!
+          <strong class="text-gray-400">4. Verify:</strong> hash = SHA-256(server_seed + client_seed + nonce_bytes), then hash[0] mod 37 = result. Anyone can verify!
         </p>
+        <p class="text-[10px] text-gray-600 mt-2 font-mono">
+          Note: nonce is encoded as 8-byte little-endian (u64)
+        </p>
+      </div>
+
+      <!-- External Verification Instructions -->
+      <div v-if="showHowItWorks" class="mt-3 pt-3 border-t border-gray-700">
+        <h5 class="text-xs font-medium text-gray-400 mb-2">External Verification Example</h5>
+        <div class="text-[10px] text-gray-600 space-y-1 font-mono bg-black/30 rounded p-2">
+          <p>1. Copy server seed, client seed, and nonce above</p>
+          <p>2. Use any SHA-256 tool (e.g., openssl, Python)</p>
+          <p>3. Concatenate: server_seed + client_seed + nonce_bytes</p>
+          <p>4. Hash with SHA-256, get first byte</p>
+          <p>5. Result = first_byte % 37</p>
+        </div>
       </div>
     </div>
   </div>

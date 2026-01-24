@@ -48,7 +48,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { formatAmount } from '../utils/roulette.js';
 
 const props = defineProps({
@@ -64,8 +64,53 @@ const props = defineProps({
 
 defineEmits(['deposit', 'withdraw']);
 
+// Animated balance value
+const displayBalance = ref(Number(props.balance) || 0);
+let animationFrameId = null;
+
+// Watch for balance changes and animate
+watch(() => props.balance, (newValue, oldValue) => {
+  const newBalance = Number(newValue) || 0;
+  const oldBalance = Number(oldValue) || 0;
+
+  // Cancel any ongoing animation
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId);
+  }
+
+  // Animate the balance change
+  const difference = newBalance - oldBalance;
+  const duration = 1000; // 1 second animation
+  const steps = 30; // Number of frames
+  const increment = difference / steps;
+  const stepDuration = duration / steps;
+
+  let currentStep = 0;
+
+  function animate() {
+    currentStep++;
+    displayBalance.value += increment;
+
+    if (currentStep < steps) {
+      setTimeout(() => {
+        animationFrameId = requestAnimationFrame(animate);
+      }, stepDuration);
+    } else {
+      // Ensure final value is exact
+      displayBalance.value = newBalance;
+      animationFrameId = null;
+    }
+  }
+
+  if (difference !== 0) {
+    animate();
+  } else {
+    displayBalance.value = newBalance;
+  }
+});
+
 // Format balance for display
 const formattedBalance = computed(() => {
-  return formatAmount(props.balance);
+  return formatAmount(Math.round(displayBalance.value));
 });
 </script>

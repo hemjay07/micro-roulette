@@ -117,6 +117,14 @@
       :result="lastResult"
       @close="showWinPopup = false"
     />
+
+    <!-- Connection Status Toast -->
+    <Toast
+      :show="showToast"
+      :message="toastMessage"
+      :type="toastType"
+      @close="showToast = false"
+    />
   </div>
 </template>
 
@@ -138,6 +146,7 @@ import SpinHistory from './components/SpinHistory.vue';
 import HotColdNumbers from './components/HotColdNumbers.vue';
 import FairnessVerifier from './components/FairnessVerifier.vue';
 import WinningsPopup from './components/WinningsPopup.vue';
+import Toast from './components/Toast.vue';
 
 // Linera connection
 const {
@@ -145,6 +154,7 @@ const {
   appId,
   isConnected,
   isConnecting,
+  isReconnecting,
   error: connectionError,
   connect,
   query,
@@ -187,6 +197,28 @@ const balance = ref(1000); // Demo balance
 // Win popup
 const showWinPopup = ref(false);
 const winAmount = ref(0);
+
+// Toast notifications
+const showToast = ref(false);
+const toastMessage = ref('');
+const toastType = ref('info');
+let toastTimeout = null;
+
+function showNotification(message, type = 'info', duration = 3000) {
+  toastMessage.value = message;
+  toastType.value = type;
+  showToast.value = true;
+
+  // Clear existing timeout
+  if (toastTimeout) {
+    clearTimeout(toastTimeout);
+  }
+
+  // Auto-hide after duration
+  toastTimeout = setTimeout(() => {
+    showToast.value = false;
+  }, duration);
+}
 
 // Handlers
 async function handleConnect() {
@@ -256,6 +288,26 @@ async function handleVerifyFairness(data) {
   const result = await verifyFairness(data.serverSeed, data.clientSeed, data.nonce);
   return result;
 }
+
+// Watch for connection status changes
+watch(isConnected, (newValue, oldValue) => {
+  // Only show notification if connection was previously lost and now restored
+  if (newValue && !oldValue && !isConnecting.value) {
+    showNotification('Connection restored!', 'success');
+  }
+});
+
+watch(isReconnecting, (newValue) => {
+  if (newValue) {
+    showNotification('Reconnecting...', 'warning', 5000);
+  }
+});
+
+watch(connectionError, (newValue) => {
+  if (newValue) {
+    showNotification(`Connection error: ${newValue}`, 'error', 5000);
+  }
+});
 
 // Initialize
 onMounted(async () => {

@@ -1,7 +1,7 @@
 <!-- src/components/BettingBoard.vue -->
 <template>
-  <div class="betting-board bg-felt-green rounded-xl p-4 shadow-2xl border-4 border-amber-800">
-    <div class="grid gap-1">
+  <div class="betting-board bg-felt-green rounded-xl p-4 shadow-2xl border-4 border-amber-800 overflow-x-auto">
+    <div class="grid gap-1 min-w-max">
       <!-- Main betting area: 0 + Numbers + Columns -->
       <div class="flex gap-1">
         <!-- Zero (spans 3 rows) -->

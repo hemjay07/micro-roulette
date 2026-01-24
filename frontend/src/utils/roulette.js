@@ -214,3 +214,103 @@ export function getSixLineStarts() {
   }
   return starts;
 }
+
+/**
+ * Validate a bet configuration
+ * @param {object} bet - Bet object with type, number, amount, etc.
+ * @returns {{valid: boolean, error?: string}}
+ */
+export function validateBet(bet) {
+  if (!bet || typeof bet !== 'object') {
+    return { valid: false, error: 'Invalid bet object' };
+  }
+
+  const { type, amount } = bet;
+
+  // Check bet type
+  if (!type) {
+    return { valid: false, error: 'Bet type is required' };
+  }
+
+  // Check amount
+  if (!amount || amount <= 0) {
+    return { valid: false, error: 'Bet amount must be greater than zero' };
+  }
+
+  // Validate based on bet type
+  switch (type.toLowerCase()) {
+    case 'straight':
+      if (bet.number === undefined || bet.number === null) {
+        return { valid: false, error: 'Number is required for straight bets' };
+      }
+      if (bet.number < 0 || bet.number > 36) {
+        return { valid: false, error: 'Number must be between 0 and 36' };
+      }
+      break;
+
+    case 'dozen':
+      if (!bet.dozen || bet.dozen < 1 || bet.dozen > 3) {
+        return { valid: false, error: 'Dozen must be 1, 2, or 3' };
+      }
+      break;
+
+    case 'column':
+      if (!bet.column || bet.column < 1 || bet.column > 3) {
+        return { valid: false, error: 'Column must be 1, 2, or 3' };
+      }
+      break;
+
+    case 'sixline':
+    case 'sixLine':
+      const start = bet.sixLineStart || bet.number;
+      if (!start) {
+        return { valid: false, error: 'Six-line start number is required' };
+      }
+      const validStarts = getSixLineStarts();
+      if (!validStarts.includes(start)) {
+        return { valid: false, error: `Six-line must start at: ${validStarts.join(', ')}` };
+      }
+      break;
+
+    case 'split':
+      if (!bet.numbers || !Array.isArray(bet.numbers) || bet.numbers.length !== 2) {
+        return { valid: false, error: 'Split bets require exactly 2 adjacent numbers' };
+      }
+      // Check adjacency (simplified - would need full board layout)
+      const diff = Math.abs(bet.numbers[0] - bet.numbers[1]);
+      if (diff !== 1 && diff !== 3) {
+        return { valid: false, error: 'Split numbers must be adjacent on board' };
+      }
+      break;
+
+    case 'street':
+      if (!bet.number) {
+        return { valid: false, error: 'Street start number is required' };
+      }
+      // Streets start at 1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34
+      if ((bet.number - 1) % 3 !== 0 || bet.number < 1 || bet.number > 34) {
+        return { valid: false, error: 'Invalid street start number' };
+      }
+      break;
+
+    case 'corner':
+      if (!bet.numbers || !Array.isArray(bet.numbers) || bet.numbers.length !== 4) {
+        return { valid: false, error: 'Corner bets require exactly 4 numbers' };
+      }
+      break;
+
+    case 'red':
+    case 'black':
+    case 'odd':
+    case 'even':
+    case 'low':
+    case 'high':
+      // These are valid simple bets with no additional parameters
+      break;
+
+    default:
+      return { valid: false, error: `Unknown bet type: ${type}` };
+  }
+
+  return { valid: true };
+}

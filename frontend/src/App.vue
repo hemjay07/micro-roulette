@@ -279,6 +279,9 @@ async function handleSpin() {
     await executeSpin(bets);
   } catch (err) {
     console.error('Spin failed:', err);
+    // Display contract error to user
+    const errorMessage = err.message || 'Spin operation failed';
+    showNotification(`Error: ${errorMessage}`, 'error', 5000);
   }
 }
 

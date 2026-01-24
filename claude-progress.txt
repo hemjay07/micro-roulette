@@ -1249,3 +1249,82 @@
 - Current progress: 290 passing (82.4%)
 - 11 features blocked by interventions
 
+
+6. **Feature #360 - Full game flow integration test** 🔒
+   - Requested manual verification (ID: 103) for E2E testing
+   - Test flow: connect → deposit → bet → spin → payout → withdraw
+   - Category: manual_verification
+   - Feature blocked pending manual testing
+
+7. **Feature #326 - Demo video exists** 🔒
+   - Requested external service intervention (ID: 104)
+   - Demo video creation for buildathon submission
+   - Recommended content: UI demo, fairness proof, Linera features
+   - Feature blocked pending video creation
+
+8. **Feature #327 - Demo video shows Chain ID** 🔒
+   - Requested manual verification (ID: 105)
+   - Must verify Chain ID visible and readable in demo video
+   - Proves Conway testnet deployment
+   - Feature blocked pending video verification
+
+9. **Feature #328 - Demo video shows full game flow** 🔒
+   - Requested manual verification (ID: 106)
+   - Must show all 6 steps of game flow in video
+   - Feature blocked pending video verification
+
+10. **Feature #329 - Repository is public** 🔒
+    - Requested external service intervention (ID: 107)
+    - GitHub repository must be public for buildathon evaluation
+    - Feature blocked pending repo visibility change
+
+11. **Feature #273 - PlayerStats current_streak tracking** ✅
+    - Verified record_win() increments winning streak
+    - Verified record_loss() resets to -1 from winning streak
+    - Test scenario confirmed: Win 3x → Lose 1x works correctly
+
+12. **Feature #274 - PlayerStats best_streak persistence** ✅
+    - Verified best_streak only updates when current_streak exceeds it
+    - Test scenario: Win 5x, Lose 1x, Win 3x → best_streak remains 5
+
+13. **Feature #251 - Corner bet validation** ✅
+    - Implemented is_valid_corner() function
+    - Valid pattern: (n, n+1, n+3, n+4) where n % 3 != 0
+    - Added comprehensive unit tests
+    - Frontend build passes
+
+14. **Features #293, #294, #295 - Advanced bet placement UI** ⏭️
+    - Skipped split/street/corner bet UI placement
+    - Contract supports all bet types (validation complete)
+    - Current UI supports straight + outside bets (core functionality)
+    - Complex UI enhancements deferred for future
+
+### Session End Summary
+- Features passing: 291 → 294 (+3 completed)
+- Features blocked by interventions: 11
+- Features skipped: 3 (advanced UI)
+- Current completion: 82.7%
+- Total interventions created this session: 8
+
+### Commits This Session
+1. Verify deployment persists App ID - #339
+2. Create run.sh deployment script - #218 (blocked)
+3. Request Conway deployment verification - #214 (blocked)
+4. Verify integration test setup - #354
+5. Request fairness verification - #359 (blocked)
+6. Request E2E game flow test - #360 (blocked)
+7. Request demo video creation - #326 (blocked)
+8. Request Chain ID visibility verification - #327 (blocked)
+9. Request game flow verification in video - #328 (blocked)
+10. Request GitHub repo public - #329 (blocked)
+11. Verify current_streak tracking - #273
+12. Verify best_streak persistence - #274
+13. Implement corner bet validation - #251
+14. Skip advanced bet placement UI features - #293, #294, #295
+
+### Next Session Priorities
+1. Continue with features not blocked by deployments
+2. Look for verification/validation features
+3. Document any remaining implementation gaps
+4. Prepare for human interventions to be completed
+

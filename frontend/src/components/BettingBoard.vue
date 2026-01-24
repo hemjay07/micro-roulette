@@ -28,8 +28,19 @@
           ></button>
         </div>
 
-        <!-- Numbers grid (3 rows x 12 columns) with split bet overlays -->
+        <!-- Numbers grid (3 rows x 12 columns) with split bet overlays and six-line bets -->
         <div class="flex-1 relative">
+          <!-- Six-line bet buttons at left edge of grid, between two columns -->
+          <button
+            v-for="sixLine in sixLineBets"
+            :key="sixLine.key"
+            @click="placeSixLineBet(sixLine.start)"
+            @contextmenu.prevent="removeSixLineBet(sixLine.start)"
+            class="sixline-bet-button"
+            :class="{ 'ring-2 ring-yellow-400': hasSixLineBetOn(sixLine.start) }"
+            :style="getSixLineBetPosition(sixLine.col)"
+            :title="`Six-Line: ${sixLine.start}-${sixLine.start + 5} (5:1)`"
+          ></button>
           <!-- Row 3 (top): 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36 -->
           <div class="flex gap-1 mb-1 relative">
             <button
@@ -380,6 +391,21 @@ const streetBets = computed(() => {
   return streets;
 });
 
+// Six-line bets (6 numbers in two adjacent rows)
+// Six-lines: 1-6, 4-9, 7-12, 10-15, 13-18, 16-21, 19-24, 22-27, 25-30, 28-33, 31-36
+const sixLineBets = computed(() => {
+  const sixLines = [];
+  // Six-lines start at: 1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31
+  for (let i = 1; i <= 31; i += 3) {
+    sixLines.push({
+      start: i,
+      key: `sixline-${i}`,
+      col: (i - 1) / 3 // Column index for positioning
+    });
+  }
+  return sixLines;
+});
+
 // Corner bets (4 numbers at intersection)
 // Generate all valid corner intersections
 const cornerBets = computed(() => {
@@ -446,6 +472,12 @@ function placeCornerBet(numbers) {
   emit('placeBet', { betType: 'Corner', numbers });
 }
 
+// Place six-line bet handler (six-line bets cover 6 numbers in 2 rows)
+function placeSixLineBet(startNumber) {
+  if (props.disabled) return;
+  emit('placeBet', { betType: 'SixLine', number: startNumber });
+}
+
 // Remove bet handler
 function removeBet(betType, number) {
   if (props.disabled) return;
@@ -468,6 +500,12 @@ function removeStreetBet(startNumber) {
 function removeCornerBet(numbers) {
   if (props.disabled) return;
   emit('removeBet', { betType: 'Corner', numbers });
+}
+
+// Remove six-line bet handler
+function removeSixLineBet(startNumber) {
+  if (props.disabled) return;
+  emit('removeBet', { betType: 'SixLine', number: startNumber });
 }
 
 // Check if there's a bet on this position
@@ -523,6 +561,14 @@ function hasCornerBetOn(numbers) {
   });
 }
 
+// Check if there's a six-line bet on this starting number
+function hasSixLineBetOn(startNumber) {
+  return props.currentBets.some(bet => {
+    return (bet.type === 'sixline' || bet.type === 'sixLine') &&
+           (bet.sixLineStart === startNumber || bet.number === startNumber);
+  });
+}
+
 // Get position for street bet button based on starting number
 // Streets correspond to rows in the layout
 function getStreetBetPosition(startNumber) {
@@ -545,6 +591,21 @@ function getStreetBetPosition(startNumber) {
     top: `${top}%`,
     height: `${rowHeight}%`,
     transform: 'translateY(0)'
+  };
+}
+
+// Get position for six-line bet button based on column index
+// Six-line bets are positioned at the left edge between two adjacent columns
+function getSixLineBetPosition(colIndex) {
+  // Calculate left position: between column and next column
+  const left = `calc(${(colIndex + 0.5) * (100 / 12)}% - 6px)`;
+
+  return {
+    position: 'absolute',
+    left,
+    top: 0,
+    height: '100%',
+    zIndex: 15
   };
 }
 
@@ -623,5 +684,15 @@ function getBetChipPosition(bet) {
 
 .corner-bet-button:hover {
   @apply bg-opacity-80 scale-125;
+}
+
+/* Six-line bet buttons (at left edge between two columns, covering all 3 rows) */
+.sixline-bet-button {
+  @apply w-3 bg-amber-600 bg-opacity-30 hover:bg-opacity-60 transition-all;
+  @apply border border-amber-500 rounded-sm cursor-pointer;
+}
+
+.sixline-bet-button:hover {
+  @apply bg-opacity-80 scale-110;
 }
 </style>

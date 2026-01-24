@@ -144,7 +144,9 @@ const statusTextClass = computed(() => {
 });
 
 const statusText = computed(() => {
-  if (props.isConnected) return 'Connected';
+  if (props.isConnected) {
+    return props.isDemoMode ? 'Connected (Demo Mode)' : 'Connected to Conway Testnet';
+  }
   if (props.isConnecting) return 'Connecting...';
   return 'Disconnected';
 });

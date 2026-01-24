@@ -105,7 +105,7 @@ export function useBets(config) {
     } else if (betType === 'sixline') {
       sixLineStart = betInfo.number || betInfo.sixLineStart;
       number = null;
-    } else if (betType === 'split' && numbers && Array.isArray(numbers)) {
+    } else if ((betType === 'split' || betType === 'corner') && numbers && Array.isArray(numbers)) {
       // Normalize numbers array to sorted order for consistent comparison
       numbers = [...numbers].sort((a, b) => a - b);
       number = null;
@@ -115,8 +115,8 @@ export function useBets(config) {
     const existingBet = currentBets.value.find(b => {
       if (b.type !== betType) return false;
 
-      // For split bets, compare numbers arrays
-      if (betType === 'split') {
+      // For split and corner bets, compare numbers arrays
+      if (betType === 'split' || betType === 'corner') {
         if (!b.numbers || !numbers) return false;
         const bNums = [...b.numbers].sort((a, b) => a - b);
         const checkNums = [...numbers].sort((a, b) => a - b);
@@ -158,8 +158,8 @@ export function useBets(config) {
     const existingIndex = currentBets.value.findIndex(b => {
       if (b.type !== bet.type) return false;
 
-      // For split bets, compare numbers arrays
-      if (betType === 'split') {
+      // For split and corner bets, compare numbers arrays
+      if (betType === 'split' || betType === 'corner') {
         if (!b.numbers || !bet.numbers) return false;
         const bNums = [...b.numbers].sort((a, b) => a - b);
         const betNums = [...bet.numbers].sort((a, b) => a - b);
@@ -252,7 +252,7 @@ export function useBets(config) {
     } else if (betType === 'sixline') {
       sixLineStart = betInfo.number || betInfo.sixLineStart;
       number = null;
-    } else if (betType === 'split' && numbers && Array.isArray(numbers)) {
+    } else if ((betType === 'split' || betType === 'corner') && numbers && Array.isArray(numbers)) {
       // Normalize numbers array to sorted order for consistent comparison
       numbers = [...numbers].sort((a, b) => a - b);
       number = null;
@@ -261,8 +261,8 @@ export function useBets(config) {
     const index = currentBets.value.findIndex(b => {
       if (b.type !== betType) return false;
 
-      // For split bets, compare numbers arrays
-      if (betType === 'split') {
+      // For split and corner bets, compare numbers arrays
+      if (betType === 'split' || betType === 'corner') {
         if (!b.numbers || !numbers) return false;
         const bNums = [...b.numbers].sort((a, b) => a - b);
         const checkNums = [...numbers].sort((a, b) => a - b);

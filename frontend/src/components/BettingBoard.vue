@@ -70,6 +70,17 @@
               :style="{ left: `calc(${((split.numbers[1] / 3 - 1) * (100 / 12)) + (100 / 24)}% - 6px)` }"
               :title="`Split: ${split.numbers.join('-')} (17:1)`"
             ></button>
+            <!-- Corner bets at intersections between row 2 and row 3 -->
+            <button
+              v-for="corner in cornerBets.filter(c => c.row === 'r2-r3')"
+              :key="corner.key"
+              @click="placeCornerBet(corner.numbers)"
+              @contextmenu.prevent="removeCornerBet(corner.numbers)"
+              class="corner-bet-button"
+              :class="{ 'ring-2 ring-yellow-400': hasCornerBetOn(corner.numbers) }"
+              :style="{ left: `calc(${(corner.col + 0.5) * (100 / 12)}% - 6px)` }"
+              :title="`Corner: ${corner.numbers.join('-')} (8:1)`"
+            ></button>
           </div>
 
           <!-- Row 2 (middle): 2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35 -->
@@ -111,6 +122,17 @@
               :class="{ 'ring-2 ring-yellow-400': hasSplitBetOn(split.numbers) }"
               :style="{ left: `calc(${((split.numbers[0] - 1) / 3) * (100 / 12) + (100 / 24)}% - 6px)` }"
               :title="`Split: ${split.numbers.join('-')} (17:1)`"
+            ></button>
+            <!-- Corner bets at intersections between row 1 and row 2 -->
+            <button
+              v-for="corner in cornerBets.filter(c => c.row === 'r1-r2')"
+              :key="corner.key"
+              @click="placeCornerBet(corner.numbers)"
+              @contextmenu.prevent="removeCornerBet(corner.numbers)"
+              class="corner-bet-button"
+              :class="{ 'ring-2 ring-yellow-400': hasCornerBetOn(corner.numbers) }"
+              :style="{ left: `calc(${(corner.col + 0.5) * (100 / 12)}% - 6px)` }"
+              :title="`Corner: ${corner.numbers.join('-')} (8:1)`"
             ></button>
           </div>
 
@@ -358,6 +380,42 @@ const streetBets = computed(() => {
   return streets;
 });
 
+// Corner bets (4 numbers at intersection)
+// Generate all valid corner intersections
+const cornerBets = computed(() => {
+  const corners = [];
+  // Corner bets exist at intersections between:
+  // - Adjacent columns (horizontal)
+  // - Adjacent rows (vertical)
+  // For row 1-2 boundary
+  for (let i = 0; i < row1Numbers.value.length - 1; i++) {
+    const bottomLeft = row1Numbers.value[i];
+    const bottomRight = row1Numbers.value[i + 1];
+    const topLeft = row2Numbers.value[i];
+    const topRight = row2Numbers.value[i + 1];
+    corners.push({
+      numbers: [bottomLeft, bottomRight, topLeft, topRight].sort((a, b) => a - b),
+      key: `corner-${bottomLeft}-${bottomRight}-${topLeft}-${topRight}`,
+      row: 'r1-r2',
+      col: i
+    });
+  }
+  // For row 2-3 boundary
+  for (let i = 0; i < row2Numbers.value.length - 1; i++) {
+    const bottomLeft = row2Numbers.value[i];
+    const bottomRight = row2Numbers.value[i + 1];
+    const topLeft = row3Numbers.value[i];
+    const topRight = row3Numbers.value[i + 1];
+    corners.push({
+      numbers: [bottomLeft, bottomRight, topLeft, topRight].sort((a, b) => a - b),
+      key: `corner-${bottomLeft}-${bottomRight}-${topLeft}-${topRight}`,
+      row: 'r2-r3',
+      col: i
+    });
+  }
+  return corners;
+});
+
 // Get CSS class for number color
 function getNumberColorClass(num) {
   const color = getNumberColor(num);
@@ -382,6 +440,12 @@ function placeStreetBet(startNumber) {
   emit('placeBet', { betType: 'Street', number: startNumber });
 }
 
+// Place corner bet handler (corner bets cover 4 numbers at intersection)
+function placeCornerBet(numbers) {
+  if (props.disabled) return;
+  emit('placeBet', { betType: 'Corner', numbers });
+}
+
 // Remove bet handler
 function removeBet(betType, number) {
   if (props.disabled) return;
@@ -398,6 +462,12 @@ function removeSplitBet(numbers) {
 function removeStreetBet(startNumber) {
   if (props.disabled) return;
   emit('removeBet', { betType: 'Street', number: startNumber });
+}
+
+// Remove corner bet handler
+function removeCornerBet(numbers) {
+  if (props.disabled) return;
+  emit('removeBet', { betType: 'Corner', numbers });
 }
 
 // Check if there's a bet on this position
@@ -436,6 +506,20 @@ function hasSplitBetOn(numbers) {
 function hasStreetBetOn(startNumber) {
   return props.currentBets.some(bet => {
     return bet.type === 'street' && bet.number === startNumber;
+  });
+}
+
+// Check if there's a corner bet on these numbers
+function hasCornerBetOn(numbers) {
+  return props.currentBets.some(bet => {
+    if (bet.type !== 'corner' || !bet.numbers || !Array.isArray(bet.numbers)) {
+      return false;
+    }
+    // Check if arrays contain the same numbers (order doesn't matter)
+    const sortedBet = [...bet.numbers].sort((a, b) => a - b);
+    const sortedCheck = [...numbers].sort((a, b) => a - b);
+    return sortedBet.length === sortedCheck.length &&
+           sortedBet.every((num, idx) => num === sortedCheck[idx]);
   });
 }
 
@@ -527,5 +611,17 @@ function getBetChipPosition(bet) {
 
 .street-bet-button:hover {
   @apply bg-opacity-80 scale-110;
+}
+
+/* Corner bet buttons (at intersections of 4 numbers) */
+.corner-bet-button {
+  @apply absolute w-3 h-3 bg-amber-600 bg-opacity-30 hover:bg-opacity-60 transition-all;
+  @apply border border-amber-500 rounded-full cursor-pointer z-20;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.corner-bet-button:hover {
+  @apply bg-opacity-80 scale-125;
 }
 </style>

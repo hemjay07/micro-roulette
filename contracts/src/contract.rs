@@ -202,6 +202,7 @@ impl RouletteContract {
     // ========== PLAYER METHODS ==========
 
     async fn deposit(&mut self, amount: Amount) {
+        assert!(amount > Amount::ZERO, "Deposit amount must be positive");
         let player = self.signer();
         self.credit(&player, amount).await;
         log::info!("Player {:?} deposited {:?}", player, amount);

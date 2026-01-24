@@ -264,6 +264,17 @@ function getMockQueryResponse(query) {
         nextSeedHash: 'a1b2c3d4e5f6...',
         currentSeed: demoLastSpinResult !== null ? 'demo-revealed-seed' : '',
       },
+      // Player info - returns zeros for fresh/new player (per contract behavior)
+      playerInfo: {
+        balance: '0',
+        totalBets: 0,
+        totalWagered: '0',
+        totalWon: '0',
+        totalLost: '0',
+        biggestWin: '0',
+        currentStreak: 0,
+        bestStreak: 0,
+      },
     },
   };
 }

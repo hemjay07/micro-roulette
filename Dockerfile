@@ -4,6 +4,16 @@
 
 FROM mujeebdimeji/linera-base:0.15.8 as builder
 
+# Build arguments for Vite
+ARG VITE_APP_ID
+ARG VITE_CHAIN_ID
+ARG VITE_LINERA_FAUCET_URL=https://faucet.testnet-conway.linera.net
+
+# Set as environment variables for build
+ENV VITE_APP_ID=$VITE_APP_ID
+ENV VITE_CHAIN_ID=$VITE_CHAIN_ID
+ENV VITE_LINERA_FAUCET_URL=$VITE_LINERA_FAUCET_URL
+
 WORKDIR /app
 COPY . .
 

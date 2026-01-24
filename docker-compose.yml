@@ -2,12 +2,19 @@ version: '3.8'
 
 services:
   roulette:
-    build: .
+    build:
+      context: .
+      args:
+        - VITE_APP_ID=9858dff414e0584a2571e39bf92bab3a3eaeca17c123330c0a4bda3599a5cdc8
+        - VITE_CHAIN_ID=aa9150191e818850a67f3e724dc31e37d7d72be84ed3eef8fd6860bfbe4fc93a
+        - VITE_LINERA_FAUCET_URL=https://faucet.testnet-conway.linera.net
     ports:
       - "8080:8080"
       - "8081:8081"
     environment:
       - LINERA_FAUCET_URL=https://faucet.testnet-conway.linera.net
+      - APP_ID=9858dff414e0584a2571e39bf92bab3a3eaeca17c123330c0a4bda3599a5cdc8
+      - CHAIN_ID=aa9150191e818850a67f3e724dc31e37d7d72be84ed3eef8fd6860bfbe4fc93a
       - RUST_LOG=info
     volumes:
       - linera-data:/root/.config/linera

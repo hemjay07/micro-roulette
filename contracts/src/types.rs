@@ -198,7 +198,7 @@ impl BetType {
             BetType::Split(a, b) => *a <= 36 && *b <= 36 && Self::are_adjacent(*a, *b),
             BetType::Street(start) => *start >= 1 && *start <= 34 && (*start - 1) % 3 == 0,
             BetType::Corner(a, b, c, d) => {
-                *a <= 36 && *b <= 36 && *c <= 36 && *d <= 36 && *a > 0
+                *a <= 36 && *b <= 36 && *c <= 36 && *d <= 36 && Self::is_valid_corner(*a, *b, *c, *d)
             }
             BetType::SixLine(start) => *start >= 1 && *start <= 31 && (*start - 1) % 3 == 0,
             BetType::Dozen(d) => *d >= 1 && *d <= 3,
@@ -215,6 +215,21 @@ impl BetType {
         let diff = if a > b { a - b } else { b - a };
         // Adjacent horizontally (diff = 1) or vertically (diff = 3)
         diff == 1 || diff == 3
+    }
+
+    /// Check if four numbers form a valid corner (2x2 grid)
+    fn is_valid_corner(a: u8, b: u8, c: u8, d: u8) -> bool {
+        if a == 0 || b == 0 || c == 0 || d == 0 {
+            return false;
+        }
+        // Sort the numbers to get consistent ordering
+        let mut nums = [a, b, c, d];
+        nums.sort();
+        let [n1, n2, n3, n4] = nums;
+
+        // Valid corner pattern: n, n+1, n+3, n+4
+        // Also check that n is not in column 3 (n % 3 != 0)
+        n2 == n1 + 1 && n3 == n1 + 3 && n4 == n1 + 4 && n1 % 3 != 0
     }
 
     /// Get a display name for this bet type
@@ -778,5 +793,36 @@ mod tests {
         let proof1 = FairnessProof::generate("seed", "client", 1);
         let proof2 = FairnessProof::generate("seed", "client", 2);
         assert_ne!(proof1.combined_hash, proof2.combined_hash);
+    }
+
+    // Corner bet validation tests
+    #[test]
+    fn test_corner_bet_valid() {
+        // Valid corners: 2x2 grids
+        assert!(BetType::Corner(1, 2, 4, 5).is_valid()); // Top-left corner
+        assert!(BetType::Corner(2, 3, 5, 6).is_valid()); // Top-middle corner
+        assert!(BetType::Corner(4, 5, 7, 8).is_valid());
+        assert!(BetType::Corner(32, 33, 35, 36).is_valid()); // Bottom-right corner
+    }
+
+    #[test]
+    fn test_corner_bet_invalid_non_adjacent() {
+        // Non-adjacent numbers
+        assert!(!BetType::Corner(1, 3, 5, 7).is_valid());
+        assert!(!BetType::Corner(1, 2, 3, 4).is_valid()); // Not a 2x2 grid
+        assert!(!BetType::Corner(1, 10, 20, 30).is_valid());
+    }
+
+    #[test]
+    fn test_corner_bet_invalid_column_3() {
+        // Numbers in column 3 cannot form valid corners
+        assert!(!BetType::Corner(3, 4, 6, 7).is_valid()); // 3 is in column 3
+        assert!(!BetType::Corner(6, 7, 9, 10).is_valid()); // 6 is in column 3
+    }
+
+    #[test]
+    fn test_corner_bet_invalid_with_zero() {
+        // Zero cannot be in a corner bet
+        assert!(!BetType::Corner(0, 1, 3, 4).is_valid());
     }
 }

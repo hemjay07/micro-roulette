@@ -1219,3 +1219,23 @@
    - Will be verified when deployment intervention #99 completes
    - Marking as blocked by same deployment need
 
+
+4. **Feature #354 - Contract integration test setup** ✅
+   - App ID available from VITE_APP_ID environment variable
+   - useLinera.js provides complete test client:
+     * connect() initializes Linera client with faucet
+     * Creates client and application handle with App ID
+     * query() and mutate() for GraphQL interaction
+   - Integration test environment fully configured
+
+5. **Feature #359 - Fairness verification integration test** 🔒
+   - Verified FairnessProof implementation in types.rs (lines 414-470)
+   - Unit tests confirm:
+     * generate() creates valid proofs
+     * verify() correctly validates proofs
+     * Consistent hashing (same inputs = same output)
+     * Different nonces produce different results
+   - Requested manual verification (ID: 102) on deployed contract
+   - Requires executing actual spin and verifying on real chain
+   - Feature blocked pending manual verification
+

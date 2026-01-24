@@ -71,6 +71,11 @@ impl Contract for RouletteContract {
         self.state.total_volume.set(Amount::ZERO);
         self.state.total_payouts.set(Amount::ZERO);
         self.state.total_spins.set(0);
+
+        // Initialize hot/cold numbers tracking
+        self.state.hot_numbers.set(Vec::new());
+        self.state.cold_numbers.set(Vec::new());
+
         log::info!("MicroRoulette initialized with house edge: {} bps, admin: {:?}", argument.house_edge_bps, admin);
     }
 
@@ -430,6 +435,18 @@ impl RouletteContract {
         let total_spins = *self.state.total_spins.get();
         self.state.total_spins.set(total_spins + 1);
 
+        // Update number statistics
+        let current_count = self.state.number_stats
+            .get(&result.0)
+            .await
+            .ok()
+            .flatten()
+            .unwrap_or(0);
+        let _ = self.state.number_stats.insert(&result.0, current_count + 1);
+
+        // Update hot/cold numbers
+        self.update_hot_cold_numbers().await;
+
         // Move to payout state
         self.state.status.set(TableStatus::PayingOut);
 
@@ -563,5 +580,35 @@ impl RouletteContract {
         self.state.status.set(TableStatus::Closed);
         self.state.paused.set(true);
         log::info!("Admin closed the table permanently");
+    }
+
+    /// Update hot and cold numbers based on number statistics
+    async fn update_hot_cold_numbers(&mut self) {
+        let mut counts: Vec<(u8, u64)> = Vec::new();
+
+        // Collect all number counts
+        for n in 0..=36u8 {
+            let count = self.state.number_stats
+                .get(&n)
+                .await
+                .ok()
+                .flatten()
+                .unwrap_or(0);
+            counts.push((n, count));
+        }
+
+        // Sort by count (descending)
+        counts.sort_by(|a, b| b.1.cmp(&a.1));
+
+        // Hot = top 5 (most frequent)
+        let hot: Vec<u8> = counts.iter().take(5).map(|(n, _)| *n).collect();
+
+        // Cold = bottom 5 (least frequent)
+        let cold: Vec<u8> = counts.iter().rev().take(5).map(|(n, _)| *n).collect();
+
+        self.state.hot_numbers.set(hot);
+        self.state.cold_numbers.set(cold);
+
+        log::debug!("Updated hot/cold numbers");
     }
 }

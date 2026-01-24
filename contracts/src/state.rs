@@ -54,6 +54,15 @@ pub struct RouletteState {
     /// Recent spin results (last 20)
     pub spin_history: QueueView<SpinResult>,
 
+    /// Statistics by number (count of times each number appeared)
+    pub number_stats: MapView<u8, u64>,
+
+    /// Hot numbers (most frequent, top 5)
+    pub hot_numbers: RegisterView<Vec<u8>>,
+
+    /// Cold numbers (least frequent, bottom 5)
+    pub cold_numbers: RegisterView<Vec<u8>>,
+
     /// Total volume (all time)
     pub total_volume: RegisterView<Amount>,
 

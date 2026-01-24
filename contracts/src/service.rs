@@ -58,6 +58,10 @@ impl Service for RouletteService {
         let last_client_seed = self.state.last_client_seed.get().clone();
         let last_result = *self.state.last_result.get();
 
+        // Hot/cold numbers
+        let hot_numbers = self.state.hot_numbers.get().clone();
+        let cold_numbers = self.state.cold_numbers.get().clone();
+
         // Convert TableStatus to string
         let status_str = match status {
             TableStatus::Open => "Open",
@@ -88,6 +92,8 @@ impl Service for RouletteService {
                 revealed_server_seed,
                 last_client_seed,
                 last_result,
+                hot_numbers,
+                cold_numbers,
             },
             MutationRoot,
             EmptySubscription,
@@ -141,6 +147,8 @@ struct QueryRoot {
     revealed_server_seed: String,
     last_client_seed: String,
     last_result: u8,
+    hot_numbers: Vec<u8>,
+    cold_numbers: Vec<u8>,
 }
 
 #[derive(SimpleObject)]
@@ -233,6 +241,16 @@ impl QueryRoot {
     /// Get last spin result
     async fn last_result(&self) -> u8 {
         self.last_result
+    }
+
+    /// Get hot numbers (most frequent, top 5)
+    async fn hot_numbers(&self) -> &Vec<u8> {
+        &self.hot_numbers
+    }
+
+    /// Get cold numbers (least frequent, bottom 5)
+    async fn cold_numbers(&self) -> &Vec<u8> {
+        &self.cold_numbers
     }
 }
 

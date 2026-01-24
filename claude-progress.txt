@@ -1199,3 +1199,23 @@
    - Feature now blocked pending deployment completion
    - Moving to next available feature
 
+
+2. **Feature #339 - Deployment persists App ID** ✅
+   - Verified init.sh saves App ID to .deployment file (line 227)
+   - Verified init.sh saves App ID to frontend/.env file (lines 254-258)
+   - Verified conway_deploy.sh saves App ID to frontend/.env file (lines 72-75)
+   - Confirmed frontend/.env exists with VITE_APP_ID populated
+   - Both deployment scripts properly persist App ID
+
+3. **Feature #218 - init.sh script works** 🔒
+   - Created run.sh script per app_spec requirements
+   - Script includes all required steps:
+     * Wallet initialization (linera wallet init)
+     * Contract compilation (cargo build WASM)
+     * Contract deployment (linera publish-and-create)
+     * Frontend startup (npm run dev)
+     * Application accessibility (outputs URLs)
+   - Requires same deployment intervention as Feature #323
+   - Will be verified when deployment intervention #99 completes
+   - Marking as blocked by same deployment need
+

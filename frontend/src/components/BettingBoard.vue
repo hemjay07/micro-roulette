@@ -5,7 +5,7 @@
       <!-- Main betting area: 0 + Numbers + Columns -->
       <div class="flex gap-1">
         <!-- Zero (spans 3 rows) -->
-        <div class="flex-shrink-0">
+        <div class="flex-shrink-0 relative">
           <button
             @click="placeBet('Straight', 0)"
             @contextmenu.prevent="removeBet('Straight', 0)"
@@ -15,6 +15,17 @@
           >
             0
           </button>
+          <!-- Street bet buttons at left edge of each row -->
+          <button
+            v-for="street in streetBets"
+            :key="street.key"
+            @click="placeStreetBet(street.start)"
+            @contextmenu.prevent="removeStreetBet(street.start)"
+            class="street-bet-button"
+            :class="{ 'ring-2 ring-yellow-400': hasStreetBetOn(street.start) }"
+            :style="getStreetBetPosition(street.start)"
+            :title="`Street: ${street.start}-${street.start + 1}-${street.start + 2} (11:1)`"
+          ></button>
         </div>
 
         <!-- Numbers grid (3 rows x 12 columns) with split bet overlays -->
@@ -336,6 +347,17 @@ const horizontalSplitsRow3 = computed(() => getHorizontalSplits(row3Numbers.valu
 const verticalSplitsRow1Row2 = computed(() => getVerticalSplits(row1Numbers.value, row2Numbers.value));
 const verticalSplitsRow2Row3 = computed(() => getVerticalSplits(row2Numbers.value, row3Numbers.value));
 
+// Street bets (3 numbers in a row)
+// Streets: 1-2-3, 4-5-6, 7-8-9, 10-11-12, 13-14-15, 16-17-18, 19-20-21, 22-23-24, 25-26-27, 28-29-30, 31-32-33, 34-35-36
+const streetBets = computed(() => {
+  const streets = [];
+  // Row 1: 1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34
+  for (let i = 1; i <= 34; i += 3) {
+    streets.push({ start: i, key: `street-${i}` });
+  }
+  return streets;
+});
+
 // Get CSS class for number color
 function getNumberColorClass(num) {
   const color = getNumberColor(num);
@@ -354,6 +376,12 @@ function placeSplitBet(numbers) {
   emit('placeBet', { betType: 'Split', numbers });
 }
 
+// Place street bet handler (street bets cover 3 numbers: e.g., 1-2-3)
+function placeStreetBet(startNumber) {
+  if (props.disabled) return;
+  emit('placeBet', { betType: 'Street', number: startNumber });
+}
+
 // Remove bet handler
 function removeBet(betType, number) {
   if (props.disabled) return;
@@ -364,6 +392,12 @@ function removeBet(betType, number) {
 function removeSplitBet(numbers) {
   if (props.disabled) return;
   emit('removeBet', { betType: 'Split', numbers });
+}
+
+// Remove street bet handler
+function removeStreetBet(startNumber) {
+  if (props.disabled) return;
+  emit('removeBet', { betType: 'Street', number: startNumber });
 }
 
 // Check if there's a bet on this position
@@ -396,6 +430,38 @@ function hasSplitBetOn(numbers) {
     return sortedBet.length === sortedCheck.length &&
            sortedBet.every((num, idx) => num === sortedCheck[idx]);
   });
+}
+
+// Check if there's a street bet on this starting number
+function hasStreetBetOn(startNumber) {
+  return props.currentBets.some(bet => {
+    return bet.type === 'street' && bet.number === startNumber;
+  });
+}
+
+// Get position for street bet button based on starting number
+// Streets correspond to rows in the layout
+function getStreetBetPosition(startNumber) {
+  // Determine which row this street belongs to
+  const rowIndex = ((startNumber - 1) / 3) % 12;
+
+  // Map to visual row (0 = bottom/row1, 1 = middle/row2, 2 = top/row3)
+  let visualRow;
+  if (startNumber % 3 === 1) visualRow = 2; // Row 1 numbers (1,4,7...) display at bottom
+  else if (startNumber % 3 === 2) visualRow = 1; // Row 2 numbers (2,5,8...) display at middle
+  else visualRow = 0; // Row 3 numbers (3,6,9...) display at top
+
+  // Calculate position
+  const rowHeight = 33.33; // Each row is 1/3 of total height
+  const top = visualRow * rowHeight;
+
+  return {
+    position: 'absolute',
+    right: '-6px',
+    top: `${top}%`,
+    height: `${rowHeight}%`,
+    transform: 'translateY(0)'
+  };
 }
 
 // Format bet amount for display
@@ -450,6 +516,16 @@ function getBetChipPosition(bet) {
 }
 
 .split-bet-vertical:hover {
+  @apply bg-opacity-80 scale-110;
+}
+
+/* Street bet buttons (at left edge of each row) */
+.street-bet-button {
+  @apply w-3 bg-amber-600 bg-opacity-30 hover:bg-opacity-60 transition-all;
+  @apply border border-amber-500 rounded-sm cursor-pointer z-10;
+}
+
+.street-bet-button:hover {
   @apply bg-opacity-80 scale-110;
 }
 </style>

@@ -115,6 +115,10 @@ impl Contract for RouletteContract {
                 self.require_admin().await;
                 self.set_paused(paused).await;
             }
+            Operation::FundTreasury { amount } => {
+                self.require_admin().await;
+                self.fund_treasury(amount).await;
+            }
             Operation::WithdrawTreasury { amount } => {
                 self.require_admin().await;
                 self.withdraw_treasury(amount).await;
@@ -569,6 +573,14 @@ impl RouletteContract {
             self.state.betting_deadline.set(Some(deadline));
             log::info!("Admin unpaused the contract");
         }
+    }
+
+    /// Fund treasury (admin only)
+    async fn fund_treasury(&mut self, amount: Amount) {
+        assert!(amount > Amount::ZERO, "Fund amount must be greater than zero");
+        let treasury = *self.state.treasury.get();
+        self.state.treasury.set(treasury.saturating_add(amount));
+        log::info!("Admin funded treasury with {:?}, new balance: {:?}", amount, treasury.saturating_add(amount));
     }
 
     /// Withdraw from treasury (admin only)

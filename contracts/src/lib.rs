@@ -60,6 +60,8 @@ pub enum Operation {
     },
     /// Pause/unpause the contract (admin only)
     SetPaused { paused: bool },
+    /// Fund treasury (admin only)
+    FundTreasury { amount: Amount },
     /// Withdraw from treasury (admin only)
     WithdrawTreasury { amount: Amount },
     /// Set the next server seed hash (admin only)

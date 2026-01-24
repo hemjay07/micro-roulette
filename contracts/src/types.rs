@@ -637,6 +637,13 @@ mod tests {
         assert!(!BetType::Split(1, 5).is_valid()); // diagonal
         assert!(!BetType::Split(1, 36).is_valid()); // not adjacent
 
+        // Street validation
+        assert!(BetType::Street(1).is_valid()); // valid starting number
+        assert!(BetType::Street(4).is_valid()); // valid starting number
+        assert!(BetType::Street(7).is_valid()); // valid starting number
+        assert!(!BetType::Street(2).is_valid()); // not a street start
+        assert!(!BetType::Street(35).is_valid()); // incomplete street (only 35, 36)
+
         // Dozens and columns
         assert!(BetType::Dozen(1).is_valid());
         assert!(BetType::Dozen(3).is_valid());

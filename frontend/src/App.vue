@@ -171,6 +171,7 @@ const {
   isSpinning,
   isBettingOpen,
   tableStatus,
+  config,
   fetchTableState,
   spin: executeSpin,
   verifyFairness,
@@ -184,12 +185,13 @@ const {
   availableChips,
   totalBetAmount,
   maxPotentialWin,
+  validationError,
   placeBet,
   clearBets,
   repeatLastBet,
   doubleBets,
   getBetsForContract,
-} = useBets();
+} = useBets(config);
 
 // Player state
 const balance = ref(1000); // Demo balance
@@ -231,7 +233,10 @@ async function handleConnect() {
 }
 
 function handlePlaceBet(betInfo) {
-  placeBet(betInfo);
+  const success = placeBet(betInfo);
+  if (!success && validationError.value) {
+    showNotification(validationError.value, 'error', 4000);
+  }
 }
 
 function handleClearBets() {

@@ -21,11 +21,12 @@ const PAYOUTS = {
 // Available chip values
 const CHIP_VALUES = [1, 5, 10, 25, 100, 500];
 
-export function useBets() {
+export function useBets(config) {
   const currentBets = ref([]);
   const lastBets = ref([]);
   const selectedChip = ref(10);
   let isDoubling = false; // Guard against rapid double-clicks
+  const validationError = ref(null);
 
   // Computed
   const totalBetAmount = computed(() => {
@@ -40,9 +41,51 @@ export function useBets() {
   });
 
   /**
+   * Validate bet amount against config limits
+   */
+  function validateBetAmount(amount, existingBetAmount = 0) {
+    if (!config || !config.value) {
+      return { valid: true };
+    }
+
+    const minBet = parseFloat(config.value.minBet) / 1_000_000; // Convert from micro-units
+    const maxBet = parseFloat(config.value.maxBet) / 1_000_000;
+    const totalAmount = amount + existingBetAmount;
+
+    if (amount < minBet) {
+      return {
+        valid: false,
+        error: `Minimum bet is ${minBet} chips`
+      };
+    }
+
+    if (totalAmount > maxBet) {
+      return {
+        valid: false,
+        error: `Maximum bet per position is ${maxBet} chips`
+      };
+    }
+
+    // Check total bet limit
+    const maxTotalBet = parseFloat(config.value.maxTotalBet || config.value.maxBet * 5) / 1_000_000;
+    const newTotal = totalBetAmount.value + amount;
+
+    if (newTotal > maxTotalBet) {
+      return {
+        valid: false,
+        error: `Maximum total bet per round is ${maxTotalBet} chips`
+      };
+    }
+
+    return { valid: true };
+  }
+
+  /**
    * Place a bet
    */
   function placeBet(betInfo) {
+    validationError.value = null;
+
     // Normalize bet type to lowercase for payout lookup
     const betType = (betInfo.betType || betInfo.type || '').toLowerCase();
 
@@ -61,6 +104,27 @@ export function useBets() {
     } else if (betType === 'sixline') {
       sixLineStart = betInfo.number || betInfo.sixLineStart;
       number = null;
+    }
+
+    // Check if same bet exists to get existing amount
+    const existingBet = currentBets.value.find(b =>
+      b.type === betType &&
+      b.number === number &&
+      b.column === column &&
+      b.dozen === dozen &&
+      b.sixLineStart === sixLineStart
+    );
+
+    // Validate bet amount
+    const validation = validateBetAmount(
+      selectedChip.value,
+      existingBet ? existingBet.amount : 0
+    );
+
+    if (!validation.valid) {
+      validationError.value = validation.error;
+      console.warn('Bet validation failed:', validation.error);
+      return false;
     }
 
     const bet = {
@@ -87,6 +151,8 @@ export function useBets() {
     } else {
       currentBets.value.push(bet);
     }
+
+    return true;
   }
 
   /**
@@ -195,6 +261,7 @@ export function useBets() {
     availableChips: CHIP_VALUES,
     totalBetAmount,
     maxPotentialWin,
+    validationError,
     placeBet,
     clearBets,
     repeatLastBet,

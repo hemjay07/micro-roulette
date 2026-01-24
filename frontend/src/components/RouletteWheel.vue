@@ -113,6 +113,16 @@
         {{ lastResult }}
       </div>
     </div>
+
+    <!-- Spinning indicator -->
+    <div
+      v-if="isSpinning"
+      class="absolute inset-0 flex items-center justify-center pointer-events-none"
+    >
+      <div class="bg-black/70 rounded-full px-6 py-3">
+        <span class="text-xl font-bold text-yellow-400 animate-pulse">Spinning...</span>
+      </div>
+    </div>
   </div>
 </template>
 

@@ -3,6 +3,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Keyboard navigation focus styles */
+button:focus-visible,
+input:focus-visible {
+  @apply outline-none ring-2 ring-green-400 ring-offset-2 ring-offset-transparent;
+}
+
 /* Roulette-specific styles */
 .roulette-number {
   @apply w-12 h-12 flex items-center justify-center font-bold rounded cursor-pointer transition-all;
@@ -10,6 +16,10 @@
 
 .roulette-number:hover {
   @apply opacity-80 transform scale-105;
+}
+
+.roulette-number:focus-visible {
+  @apply ring-2 ring-yellow-400 ring-offset-2;
 }
 
 .roulette-number.red {

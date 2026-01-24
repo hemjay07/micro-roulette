@@ -733,6 +733,22 @@ mod tests {
         assert!(!sixline_bet.is_winner(RouletteNumber::new(7).unwrap()));
     }
 
+    // Bet tests
+    #[test]
+    fn test_bet_validation() {
+        // Valid bet
+        let valid_bet = Bet::new(BetType::Red, Amount::from_tokens(10));
+        assert!(valid_bet.is_some());
+
+        // Zero amount rejected
+        let zero_bet = Bet::new(BetType::Red, Amount::ZERO);
+        assert!(zero_bet.is_none(), "Bets with zero amount should be rejected");
+
+        // Invalid bet type rejected
+        let invalid_bet = Bet::new(BetType::Straight(37), Amount::from_tokens(10));
+        assert!(invalid_bet.is_none(), "Bets with invalid bet type should be rejected");
+    }
+
     // FairnessProof tests
     #[test]
     fn test_fairness_proof_generation() {

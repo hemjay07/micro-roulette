@@ -114,6 +114,7 @@
         :last-result="lastSpinProof?.lastResult"
         :spin-number="spinNumber"
         @verify="handleVerifyFairness"
+        @copied="handleCopied"
         :class="['mt-8 transition-all duration-300', { 'ring-2 ring-green-400': highlightVerifier }]"
       />
     </main>
@@ -320,6 +321,10 @@ function handleVerifySpin(spin) {
 
   // Show notification about the spin
   showNotification(`Viewing fairness data for Spin #${spin.spinId}`, 'info', 3000);
+}
+
+function handleCopied(data) {
+  showNotification(`${data.label} copied to clipboard!`, 'success', 2000);
 }
 
 // Watch for connection status changes

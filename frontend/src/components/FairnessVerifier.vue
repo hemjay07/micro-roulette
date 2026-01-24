@@ -275,7 +275,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['verify']);
+const emit = defineEmits(['verify', 'copied']);
 
 // Verification form state
 const verifyServerSeed = ref('');
@@ -340,6 +340,8 @@ function getResultColor(color) {
 async function copyToClipboard(text, type) {
   try {
     await navigator.clipboard.writeText(text);
+
+    // Update local copied state
     if (type === 'nextHash') {
       copiedNextHash.value = true;
       setTimeout(() => { copiedNextHash.value = false; }, 2000);
@@ -353,6 +355,15 @@ async function copyToClipboard(text, type) {
       copiedNonce.value = true;
       setTimeout(() => { copiedNonce.value = false; }, 2000);
     }
+
+    // Emit event for toast notification
+    const labels = {
+      'nextHash': 'Next seed hash',
+      'currentSeed': 'Current seed',
+      'clientSeed': 'Client seed',
+      'nonce': 'Nonce'
+    };
+    emit('copied', { type, label: labels[type] || 'Value' });
   } catch (err) {
     console.error('Failed to copy:', err);
   }

@@ -90,9 +90,31 @@
 - "Add 'Spinning...' text indicator to roulette wheel"
 - "Add horizontal scroll to betting board for mobile devices"
 
+18. **Feature #149 - No horizontal overflow** ✅
+    - Container mx-auto constrains width
+    - Only BettingBoard scrolls horizontally on mobile (intentional)
+
+19. **Feature #150 - Betting board scrollable on mobile** ✅
+    - overflow-x-auto + min-w-max implemented in #148
+    - Board scrolls horizontally on small viewports
+
+20. **Feature #151 - Wheel scales appropriately** ✅
+    - Added max-w-full to wrapper
+    - Added w-full h-auto max-w-full to SVG
+    - Wheel now responsive on all screen sizes
+
+21. **Feature #152 - Modals fit viewport** ✅
+    - WinningsPopup has max-w-md and mx-4
+    - Fits within viewport on all screen sizes
+
+22. **Feature #153 - Touch targets adequate size** ✅
+    - Increased roulette-number: h-8 (32px) → h-12 (48px)
+    - betting-zone: added min-height: 44px and py-3
+    - All buttons meet 44px minimum for touch accessibility
+
 ### Session End
-- Features passing: 253 (71.9%)
-- Completed 17 features this session
+- Features passing: 258 (73.3%)
+- Completed 22 features this session
 - All features verified via code inspection and build checks
 
 ---

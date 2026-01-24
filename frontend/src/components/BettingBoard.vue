@@ -271,9 +271,10 @@ function getBetChipPosition(bet) {
 
 <style scoped>
 .betting-zone {
-  @apply px-2 py-2 bg-felt-green border-2 border-amber-700 rounded text-white font-bold text-sm;
+  @apply px-2 py-3 bg-felt-green border-2 border-amber-700 rounded text-white font-bold text-sm;
   @apply hover:bg-green-700 transition-colors cursor-pointer;
   min-width: 50px;
+  min-height: 44px;
 }
 
 .betting-zone:hover {

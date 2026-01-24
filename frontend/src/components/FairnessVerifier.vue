@@ -142,20 +142,29 @@
       <button
         @click="showHowItWorks = !showHowItWorks"
         class="flex items-center justify-between w-full text-sm text-gray-400 hover:text-white transition-colors"
+        :aria-expanded="showHowItWorks"
+        aria-controls="how-it-works-content"
       >
-        <span>How it works</span>
+        <span id="how-it-works-label">How it works</span>
         <svg
           class="w-4 h-4 transition-transform"
           :class="{ 'rotate-180': showHowItWorks }"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
+          aria-hidden="true"
         >
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
         </svg>
       </button>
 
-      <div v-if="showHowItWorks" class="mt-3 text-xs text-gray-500 space-y-2">
+      <div
+        v-if="showHowItWorks"
+        id="how-it-works-content"
+        role="region"
+        aria-labelledby="how-it-works-label"
+        class="mt-3 text-xs text-gray-500 space-y-2"
+      >
         <p>
           <strong class="text-gray-400">1. Commit:</strong> Before each spin, the house commits to a server seed by publishing its SHA-256 hash.
         </p>

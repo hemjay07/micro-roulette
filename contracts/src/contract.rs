@@ -4,7 +4,7 @@
 #![cfg_attr(target_arch = "wasm32", no_main)]
 
 use linera_sdk::{
-    linera_base_types::{Amount, WithContractAbi},
+    linera_base_types::{Amount, Timestamp, WithContractAbi},
     views::{View, RootView},
     Contract, ContractRuntime,
 };
@@ -175,6 +175,11 @@ impl RouletteContract {
         self.runtime
             .authenticated_signer()
             .expect("Operation must be authenticated")
+    }
+
+    /// Get current system time
+    fn now(&self) -> Timestamp {
+        self.runtime.system_time()
     }
 
     /// Get player balance
@@ -384,6 +389,7 @@ impl RouletteContract {
         let spin_result = SpinResult {
             spin_id: spin_number,
             result,
+            timestamp: self.now(),
             seed_hash: proof.combined_hash.clone(),
             total_bets: *self.state.round_total.get(),
             total_payout,

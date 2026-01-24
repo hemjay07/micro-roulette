@@ -1,7 +1,7 @@
 // src/types.rs
 //! Core types for MicroRoulette
 
-use linera_sdk::linera_base_types::Amount;
+use linera_sdk::linera_base_types::{Amount, Timestamp};
 use serde::{Deserialize, Serialize};
 
 // ============================================================================
@@ -325,6 +325,8 @@ pub struct SpinResult {
     pub spin_id: u64,
     /// The winning number
     pub result: RouletteNumber,
+    /// When the spin occurred
+    pub timestamp: Timestamp,
     /// Hash of the seed used (for provable fairness)
     pub seed_hash: String,
     /// Total amount bet this spin

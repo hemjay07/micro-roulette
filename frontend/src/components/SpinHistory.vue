@@ -14,12 +14,14 @@
 
     <!-- History list -->
     <div v-else class="flex flex-wrap gap-2">
-      <div
+      <button
         v-for="spin in historyData"
         :key="spin.spinId"
+        @click="handleSpinClick(spin)"
         class="spin-result group relative"
         :class="getResultColorClass(spin.result)"
-        :title="`Spin #${spin.spinId}`"
+        :title="`Spin #${spin.spinId} - Click to verify`"
+        :aria-label="`Verify spin #${spin.spinId}, result ${spin.result}`"
       >
         <span class="font-bold">{{ spin.result }}</span>
 
@@ -29,10 +31,11 @@
           <div v-if="spin.seedHash" class="text-gray-500 text-[10px] font-mono truncate max-w-[120px]">
             {{ spin.seedHash.slice(0, 8) }}...
           </div>
+          <div class="text-green-400 text-[10px] mt-1">Click to verify</div>
           <!-- Arrow -->
           <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-black"></div>
         </div>
-      </div>
+      </button>
     </div>
 
     <!-- Statistics -->
@@ -66,8 +69,15 @@ const props = defineProps({
   }
 });
 
+const emit = defineEmits(['verify-spin']);
+
 // Use toRef to maintain reactivity from props
 const historyData = toRef(props, 'history');
+
+// Handle spin click
+function handleSpinClick(spin) {
+  emit('verify-spin', spin);
+}
 
 // Get CSS class based on result color
 function getResultColorClass(result) {

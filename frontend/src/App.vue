@@ -20,7 +20,10 @@
 
         <!-- Left column: History & Stats -->
         <div class="space-y-6">
-          <SpinHistory :history="spinHistory" />
+          <SpinHistory
+            :history="spinHistory"
+            @verify-spin="handleVerifySpin"
+          />
           <HotColdNumbers :hot-numbers="hotNumbers" :cold-numbers="coldNumbers" />
         </div>
 
@@ -100,13 +103,14 @@
 
       <!-- Fairness Verifier -->
       <FairnessVerifier
+        ref="fairnessVerifier"
         :next-seed-hash="lastSpinProof?.nextSeedHash"
         :current-seed="lastSpinProof?.currentSeed"
         :last-client-seed="lastSpinProof?.lastClientSeed"
         :last-result="lastSpinProof?.lastResult"
         :spin-number="spinNumber"
         @verify="handleVerifyFairness"
-        class="mt-8"
+        :class="['mt-8 transition-all duration-300', { 'ring-2 ring-green-400': highlightVerifier }]"
       />
     </main>
 
@@ -200,6 +204,10 @@ const balance = ref(1000); // Demo balance
 const showWinPopup = ref(false);
 const winAmount = ref(0);
 
+// Fairness verifier ref and highlight
+const fairnessVerifier = ref(null);
+const highlightVerifier = ref(false);
+
 // Toast notifications
 const showToast = ref(false);
 const toastMessage = ref('');
@@ -292,6 +300,22 @@ function onSpinComplete(result) {
 async function handleVerifyFairness(data) {
   const result = await verifyFairness(data.serverSeed, data.clientSeed, data.nonce);
   return result;
+}
+
+function handleVerifySpin(spin) {
+  // Scroll to fairness verifier
+  if (fairnessVerifier.value && fairnessVerifier.value.$el) {
+    fairnessVerifier.value.$el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  // Highlight the verifier temporarily
+  highlightVerifier.value = true;
+  setTimeout(() => {
+    highlightVerifier.value = false;
+  }, 2000);
+
+  // Show notification about the spin
+  showNotification(`Viewing fairness data for Spin #${spin.spinId}`, 'info', 3000);
 }
 
 // Watch for connection status changes

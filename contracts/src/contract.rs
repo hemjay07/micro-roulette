@@ -435,6 +435,16 @@ impl RouletteContract {
         let total_spins = *self.state.total_spins.get();
         self.state.total_spins.set(total_spins + 1);
 
+        // Update treasury with house profit/loss
+        // House profit = total bets - total payout
+        let round_total = *self.state.round_total.get();
+        let house_profit = round_total.saturating_sub(total_payout);
+        let current_treasury = *self.state.treasury.get();
+        self.state.treasury.set(current_treasury.saturating_add(house_profit));
+
+        log::info!("Treasury updated: house profit = {:?}, new treasury = {:?}",
+            house_profit, current_treasury.saturating_add(house_profit));
+
         // Update number statistics
         let current_count = self.state.number_stats
             .get(&result.0)

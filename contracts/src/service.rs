@@ -62,6 +62,9 @@ impl Service for RouletteService {
         let hot_numbers = self.state.hot_numbers.get().clone();
         let cold_numbers = self.state.cold_numbers.get().clone();
 
+        // Treasury
+        let treasury = self.state.treasury.get().to_string();
+
         // Convert TableStatus to string
         let status_str = match status {
             TableStatus::Open => "Open",
@@ -94,6 +97,7 @@ impl Service for RouletteService {
                 last_result,
                 hot_numbers,
                 cold_numbers,
+                treasury,
             },
             MutationRoot,
             EmptySubscription,
@@ -149,6 +153,7 @@ struct QueryRoot {
     last_result: u8,
     hot_numbers: Vec<u8>,
     cold_numbers: Vec<u8>,
+    treasury: String,
 }
 
 #[derive(SimpleObject)]
@@ -251,6 +256,11 @@ impl QueryRoot {
     /// Get cold numbers (least frequent, bottom 5)
     async fn cold_numbers(&self) -> &Vec<u8> {
         &self.cold_numbers
+    }
+
+    /// Get treasury balance (house profit/loss accumulator)
+    async fn treasury(&self) -> &str {
+        &self.treasury
     }
 }
 

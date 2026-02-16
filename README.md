@@ -1,356 +1,129 @@
 # MicroRoulette
 
-🎰 **Every Spin On-Chain - Provably Fair Roulette on Linera**
+**Provably fair roulette, fully on-chain, powered by Linera.**
 
-MicroRoulette is a classic European roulette game running entirely on Linera's microchain architecture. Every spin is provably fair, every bet is recorded on-chain, and payouts settle in under one second.
-
-## 🚀 Live Demo & Real Blockchain Verification
-
-**IMPORTANT FOR JUDGES:**
-
-This application is deployed on **real Linera Conway testnet blockchain**, not demo/mock data.
-
-### Option 1: Run Locally with Docker (Verify Real Blockchain)
-```bash
-docker compose up --build
-```
-Then open http://localhost:8080
-
-This connects to:
-- **Chain ID**: `781078b5a05e20fb1cd13c06622ccc91f813d112f020816e799a9ec1ba4298dc`
-- **App ID**: `9b16ccbe34c686f959ad6d3ebe9dde35a1ab7cf73a99a470feae0b082be59059`
-- **Network**: Linera Conway Testnet (https://faucet.testnet-conway.linera.net)
-
-The Chain ID and App ID will be displayed in the UI header to verify real blockchain connection.
-
-### Option 2: Online Demo
-Visit [Production URL] - Demo mode for quick UI preview (real blockchain accessible via Docker)
-
-📘 **[Full Deployment Guide →](./DEPLOYMENT.md)** - Detailed instructions for Vercel, Render, and Docker deployments
-
-## Features
-
-- 🎯 **Full European Roulette** - 37 numbers (0-36), all standard bet types
-- ⚡ **Sub-second Settlement** - Leverages Linera's microchain speed
-- 🔒 **Provably Fair** - Verifiable randomness using SHA256 seeds
-- 📊 **Live Statistics** - Hot/cold numbers, spin history
-- 💰 **Multiple Bet Types** - Straight, split, red/black, dozens, columns
-- 🔗 **Fully On-Chain** - Running on Linera Conway testnet
-- 🌐 **Direct GraphQL Integration** - Browser-to-blockchain via HTTP
+MicroRoulette is a European roulette game where every spin, bet, and payout happens on a Linera microchain. The randomness is verifiable, the settlement is sub-second, and you can confirm any result yourself using the built-in fairness checker.
 
 ## Quick Start
 
-### Using Docker (Recommended for Judges - Real Blockchain)
-
 ```bash
-# Clone the repository
 git clone <repository-url>
 cd micro-roulette
-
-# Start everything with Docker
 docker compose up --build
 ```
 
-Then open http://localhost:8080
+Open [http://localhost:8080](http://localhost:8080). That's it.
 
-**What happens:**
-1. Linera wallet initialized with Conway testnet faucet
-2. Smart contracts loaded from pre-built WASM binaries
-3. GraphQL service starts on port 8082
-4. Frontend connects to local Linera service
-5. **All spins execute on real blockchain** ✅
+The Docker container initializes a Linera wallet against the Conway testnet, loads the smart contracts, and starts both the GraphQL service and the frontend. All spins execute on the real blockchain.
 
-### Manual Setup (Advanced)
+## Screenshots
 
-```bash
-# Make init script executable
-chmod +x init.sh
+| Landing | Bets Placed | Spin Result |
+|---------|-------------|-------------|
+| ![Landing](screenshots/01-landing.png) | ![Bets](screenshots/03-game-bets-placed.png) | ![Result](screenshots/04-spin-result.png) |
 
-# Run the init script
-./init.sh
-```
+| Spin History | Leaderboard |
+|--------------|-------------|
+| ![History](screenshots/06-history.png) | ![Leaderboard](screenshots/07-leaderboard.png) |
 
-## Requirements
+## Features
 
-- **Rust 1.86.0** (pinned via rust-toolchain.toml - CRITICAL)
-- **Node.js 20+**
-- **Linera CLI** (installed automatically by init.sh)
+- **Full European roulette** -- 37 numbers (0-36), all standard bet types
+- **Sub-second settlement** -- Linera microchains finalize fast enough for real-time play
+- **Provably fair** -- SHA-256 commit-reveal scheme, verifiable in the UI
+- **Live statistics** -- hot/cold numbers and spin history pulled from on-chain state
+- **Multiple bet types** -- straight, split, street, corner, six line, red/black, odd/even, dozens, columns
+- **Fully on-chain** -- no off-chain game logic, everything lives in the smart contract
 
-## Project Structure
-
-```
-micro-roulette/
-├── rust-toolchain.toml      # Pins Rust to 1.86.0 (prevents WASM opcode errors)
-├── contracts/
-│   ├── Cargo.toml
-│   └── src/
-│       ├── lib.rs           # ABI definitions
-│       ├── contract.rs      # Contract implementation
-│       ├── service.rs       # GraphQL service
-│       ├── types.rs         # Core types (Bet, SpinResult, etc.)
-│       ├── state.rs         # Linera Views state
-│       └── operations.rs    # Operations and Messages
-├── frontend/
-│   ├── package.json
-│   ├── vite.config.js       # WASM configuration
-│   └── src/
-│       ├── App.vue
-│       ├── components/      # Vue components
-│       ├── composables/     # Vue composables
-│       └── utils/           # Helper utilities
-├── init.sh                  # Development setup script
-├── Dockerfile
-└── docker-compose.yml
-```
-
-## Bet Types & Payouts
+## Bet Types and Payouts
 
 | Bet Type | Payout | Description |
 |----------|--------|-------------|
 | Straight | 35:1 | Single number (0-36) |
 | Split | 17:1 | Two adjacent numbers |
-| Street | 11:1 | Row of 3 numbers |
+| Street | 11:1 | Row of three numbers |
 | Corner | 8:1 | Four adjacent numbers |
-| Six Line | 5:1 | Two rows (6 numbers) |
+| Six Line | 5:1 | Two rows (six numbers) |
 | Red/Black | 1:1 | Color bet |
 | Odd/Even | 1:1 | Parity bet |
 | Low/High | 1:1 | 1-18 or 19-36 |
 | Dozen | 2:1 | 1-12, 13-24, or 25-36 |
 | Column | 2:1 | Column of 12 numbers |
 
-## Provable Fairness
+## How Provable Fairness Works
 
-MicroRoulette uses a commit-reveal scheme for provable fairness:
+Every spin uses a commit-reveal scheme:
 
-1. **Before Spin**: Server seed hash is committed (shown in UI)
-2. **During Bet**: Players see commitment but not actual seed
-3. **On Spin**: Client seed combined with server seed
-4. **After Spin**: Server seed revealed for verification
+1. Before bets are placed, the server seed hash is committed and visible in the UI
+2. The player's browser generates a client seed
+3. On spin, the result is computed: `SHA-256(server_seed + client_seed + nonce)[0] mod 37`
+4. After the spin, the server seed is revealed so you can verify the result
 
-**Algorithm:**
+The Fairness Verifier panel in the app lets you check any past spin against its seeds.
+
+## Architecture
+
+Everything that matters for game integrity runs on-chain in the Linera smart contract:
+
+| On-Chain (Smart Contract) | Off-Chain (Frontend) |
+|---------------------------|----------------------|
+| Bet placement and validation | Roulette wheel animation |
+| Balance management (MapView) | Bet selection UI |
+| Randomness generation (SHA-256) | Win celebrations |
+| Payout calculation and distribution | Hot/cold number display |
+| Spin history (QueueView) | Wallet connection |
+| Game state and table status | |
+
+The frontend is a Vue.js SPA that talks to the smart contract through Linera's GraphQL service. No game logic lives in the frontend.
+
+## Tech Stack
+
+**Smart Contract**
+- Linera SDK v0.15.8
+- Rust, compiled to `wasm32-unknown-unknown`
+- State: Linera Views (MapView, RegisterView, QueueView)
+- API: async-graphql
+
+**Frontend**
+- Vue.js 3 with Vite
+- Tailwind CSS
+- `@linera/client` for browser-to-blockchain communication
+
+## Testnet Info
+
+| | |
+|---|---|
+| Network | Conway |
+| Chain ID | `781078b5...4298dc` |
+| App ID | `9b16ccbe...e59059` |
+| Faucet | https://faucet.testnet-conway.linera.net |
+
+The full Chain ID and App ID are displayed in the app header once running.
+
+## Project Structure
+
 ```
-result = SHA256(server_seed + client_seed + nonce)[0] mod 37
+micro-roulette/
+├── contracts/
+│   └── src/
+│       ├── lib.rs            # ABI definitions
+│       ├── contract.rs       # Contract logic
+│       ├── service.rs        # GraphQL service
+│       ├── types.rs          # Bet, SpinResult, etc.
+│       ├── state.rs          # Linera Views state
+│       └── operations.rs     # Operations and messages
+├── frontend/
+│   └── src/
+│       ├── pages/            # Landing, Game, History, Leaderboard, Rules
+│       ├── components/       # Wheel, board, chips, fairness verifier
+│       ├── composables/      # useRoulette, useLinera
+│       └── router/           # Vue Router setup
+├── Dockerfile
+├── docker-compose.yml
+├── docker-entrypoint.sh
+└── rust-toolchain.toml       # Pins Rust to 1.86.0
 ```
-
-You can verify any spin in the Fairness Verifier section of the app.
-
-## Architecture: On-Chain vs Off-Chain
-
-MicroRoulette is designed with a clear separation between on-chain and off-chain components:
-
-### On-Chain (Linera Smart Contract)
-Everything critical to the game's integrity runs on-chain:
-
-| Component | Description |
-|-----------|-------------|
-| **Bet Placement** | All bets recorded in contract state |
-| **Balance Management** | Player balances stored in MapView |
-| **Randomness Generation** | SHA256-based provable fairness |
-| **Payout Calculation** | Winnings computed and distributed on-chain |
-| **Spin History** | Last 20 results stored in QueueView |
-| **Game State** | Table status, spin number, round totals |
-
-### Off-Chain (Frontend)
-The Vue.js frontend handles presentation and user interaction:
-
-| Component | Description |
-|-----------|-------------|
-| **Roulette Wheel Animation** | Visual spinning effect (decorative) |
-| **Bet Selection UI** | Drag/click to place chips (UI only) |
-| **Win Celebration** | Confetti effects |
-| **Hot/Cold Display** | Visualizes on-chain statistics |
-| **Wallet Connection** | linera-web handles key management |
-
-### Why This Split?
-- **Security**: All financial logic on-chain = trustless
-- **Performance**: Heavy animations off-chain = smooth UX
-- **Verifiability**: Anyone can verify spin results on-chain
-- **Transparency**: All state queryable via GraphQL
-
-## Linera Features Used
-
-- **Microchains** - Each game runs on its own microchain for isolation
-- **Linera SDK v0.15.8** - Smart contracts compiled to WASM
-- **Linera Views** - MapView, RegisterView, QueueView for persistent state
-- **GraphQL Service** - Query and mutate state via async-graphql
-- **Cross-chain Messages** - SpinResult, BetConfirmed, Payout, Refund
-- **linera-web (@linera/client)** - Browser-native blockchain connection
-- **Conway Testnet** - Deployed to production testnet
-- **Sub-second Finality** - Fast settlement for real-time gameplay
-
-## Technical Stack
-
-### Backend (Smart Contract)
-- **Linera SDK**: v0.15.8
-- **State Management**: Linera Views (MapView, RegisterView, QueueView)
-- **Target**: wasm32-unknown-unknown
-
-### Frontend
-- **Framework**: Vue.js 3.4+
-- **Blockchain Client**: @linera/client (linera-web)
-- **Build Tool**: Vite 5.x
-- **Styling**: Tailwind CSS
-
-### Testnet
-- **Network**: Conway
-- **Faucet**: https://faucet.testnet-conway.linera.net
-
-## Development
-
-### Building Contracts Only
-
-```bash
-./init.sh --build-only
-```
-
-### Skipping Deployment
-
-```bash
-./init.sh --no-deploy
-```
-
-### Environment Variables
-
-```bash
-LINERA_FAUCET_URL=https://faucet.testnet-conway.linera.net
-FRONTEND_PORT=8080
-API_PORT=8081
-```
-
-## Blockchain Verification
-
-### Verify Real Blockchain Connection
-
-Once Docker is running, you can verify the blockchain connection:
-
-**Method 1: Check UI Header**
-- Chain ID and App ID are displayed in the app header
-- Should match the IDs listed above
-
-**Method 2: GraphQL Direct Query**
-```bash
-# Query the Linera service directly
-curl -X POST http://localhost:8082/chains/781078b5a05e20fb1cd13c06622ccc91f813d112f020816e799a9ec1ba4298dc/applications/9b16ccbe34c686f959ad6d3ebe9dde35a1ab7cf73a99a470feae0b082be59059 \
-  -H "Content-Type: application/json" \
-  -d '{"query": "{ tableStatus spinNumber }"}'
-```
-
-**Method 3: Browser Console**
-```javascript
-// Open browser console and check connection status
-console.log(window.__LINERA_CONFIG__)
-```
-
-## API Reference
-
-### GraphQL Queries
-
-```graphql
-# Verify blockchain connection - returns the actual chain ID
-query { chainId }
-
-# Get table status (returns String: "Open", "Spinning", etc.)
-query {
-  tableStatus
-  spinNumber
-  roundTotal
-  isBettingOpen
-}
-
-# Get table configuration
-query {
-  config {
-    minBet
-    maxBet
-    maxTotalBet
-    houseEdgeBps
-  }
-}
-
-# Get spin history
-query {
-  spinHistory(limit: 10) {
-    spinId
-    result
-    resultColor
-  }
-}
-
-# Get hot/cold numbers
-query {
-  hotNumbers
-  coldNumbers
-}
-
-# Get fairness info for verification
-query {
-  fairnessInfo {
-    serverSeedHash
-    revealedServerSeed
-    lastClientSeed
-    lastResult
-    canVerify
-  }
-}
-
-# Verify a spin result manually
-query {
-  verifyFairness(
-    serverSeed: "revealed_seed_here",
-    clientSeed: "client_seed_here",
-    nonce: "1"
-  ) {
-    result
-    resultColor
-    combinedHash
-    isValid
-  }
-}
-```
-
-### GraphQL Mutations
-
-```graphql
-# Place a bet
-mutation {
-  placeBet(betsJson: "[{\"betType\":\"Red\",\"amount\":\"1000000\",\"numbers\":[1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]}]")
-}
-
-# Execute a spin
-mutation {
-  spin(clientSeed: "random_client_seed_12345")
-}
-```
-
-## Testing
-
-Comprehensive UI and functionality testing was conducted January 22-24, 2026. All tests passed with no bugs found.
-
-**Test Status**: ✅ Production Ready
-
-See `test-artifacts/` directory for:
-- Full test reports
-- Bug investigation documentation
-- UI screenshots
-- Test methodology notes
-
-Key findings:
-- All payout calculations mathematically correct
-- Bet placement and stacking working as intended
-- Visual polish verified
-- Provable fairness system functional
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
 
 ## License
 
 MIT
-
----
-
-Built for the Linera Hackathon 🏆

@@ -33,11 +33,10 @@ const error = ref(null);
 async function initialize() {
   if (isInitialized.value) return;
 
-  // If demo mode, skip initialization
+  // If demo mode, skip initialization but keep real chain ID
   if (DEMO_MODE) {
-    console.log('DEMO_MODE enabled, using local demo mode');
     isDemoMode.value = true;
-    chainId.value = chainId.value || 'demo-chain-' + Math.random().toString(36).substring(7);
+    // Always use real Chain ID for display
     isInitialized.value = true;
     return true;
   }
@@ -151,9 +150,7 @@ async function query(graphqlQuery, variables = {}) {
 // Execute a GraphQL mutation via direct HTTP
 async function mutate(mutation, variables = {}) {
   if (isDemoMode.value) {
-    // Simulate mutation in demo mode
-    console.log('Demo mode mutation:', mutation, variables);
-
+    // Simulate mutation when service unavailable
     // Handle spin mutation - generate random result
     if (mutation.includes('Spin')) {
       demoLastSpinResult = Math.floor(Math.random() * 37); // 0-36
@@ -165,14 +162,15 @@ async function mutate(mutation, variables = {}) {
         spinId: demoSpinHistory.length + 1,
         result: demoLastSpinResult,
         resultColor: resultColor,
-        seedHash: 'demo-seed-' + Math.random().toString(36).substring(7)
+        seedHash: Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')
       });
       if (demoSpinHistory.length > 20) demoSpinHistory.pop();
 
       // Track number stats
       demoNumberStats[demoLastSpinResult] = (demoNumberStats[demoLastSpinResult] || 0) + 1;
 
-      console.log('Demo spin result:', demoLastSpinResult, resultColor);
+      // Return the result so animation can start immediately
+      return { data: { spin: demoLastSpinResult, success: true } };
     }
 
     return { data: { success: true } };
@@ -300,7 +298,7 @@ function getMockQueryResponse(query) {
       spinId: demoSpinHistory.length,
       result: demoLastSpinResult,
       resultColor: resultColor,
-      seedHash: 'demo-seed-hash'
+      seedHash: Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')
     };
   }
 
@@ -313,12 +311,10 @@ function getMockQueryResponse(query) {
 
   return {
     data: {
-      tableStatus: {
-        status: 'Open',
-        spinNumber: String(demoSpinHistory.length + 1),
-        roundTotal: '0',
-        isBettingOpen: true,
-      },
+      tableStatus: 'Open',
+      spinNumber: String(demoSpinHistory.length + 1),
+      roundTotal: '0',
+      isBettingOpen: true,
       config: {
         minBet: '1000000',
         maxBet: '100000000',
@@ -330,9 +326,10 @@ function getMockQueryResponse(query) {
       coldNumbers: getColdNumbers(),
       numberStats: demoNumberStats,
       lastSpin: lastSpin,
+      lastResult: demoLastSpinResult,
       fairnessInfo: {
-        nextSeedHash: 'a1b2c3d4e5f6...',
-        currentSeed: demoLastSpinResult !== null ? 'demo-revealed-seed' : '',
+        nextSeedHash: Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join(''),
+        currentSeed: demoLastSpinResult !== null ? Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('') : '',
       },
       // Player info - returns zeros for fresh/new player (per contract behavior)
       playerInfo: {

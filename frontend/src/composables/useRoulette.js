@@ -42,6 +42,12 @@ export function useRoulette(query, mutate) {
           hotNumbers
           coldNumbers
           lastResult
+          spinHistory(limit: 20) {
+            spinId
+            result
+            resultColor
+            seedHash
+          }
           fairnessInfo {
             serverSeedHash
             revealedServerSeed
@@ -82,8 +88,12 @@ export function useRoulette(query, mutate) {
           coldNumbers.value = data.coldNumbers;
         }
 
-        if (data.lastResult !== undefined) {
+        if (data.lastResult !== undefined && data.lastResult !== null) {
           lastResult.value = data.lastResult;
+        }
+
+        if (data.spinHistory) {
+          spinHistory.value = data.spinHistory;
         }
 
         if (data.fairnessInfo) {
@@ -117,11 +127,16 @@ export function useRoulette(query, mutate) {
       }
 
       // Execute spin
-      await mutate(`
+      const spinResult = await mutate(`
         mutation Spin($seed: String!) {
           spin(clientSeed: $seed)
         }
       `, { seed: clientSeed });
+
+      // Set result immediately so wheel animation knows where to land
+      if (spinResult.data?.spin !== undefined) {
+        lastResult.value = spinResult.data.spin;
+      }
 
       // Wait for animation (5 seconds)
       await new Promise(resolve => setTimeout(resolve, 5000));

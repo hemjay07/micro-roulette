@@ -1,375 +1,179 @@
 <!-- src/App.vue -->
 <template>
-  <div id="app" class="min-h-screen bg-gradient-to-b from-green-900 to-green-950 text-white">
-    <!-- Header -->
-    <Header :balance="balance" :is-connected="isConnected" />
+  <div id="app" class="min-h-screen bg-bg-main text-text-primary">
+    <!-- Navigation (shown on all pages except landing) -->
+    <nav
+      v-if="$route.name !== 'Landing'"
+      class="sticky top-0 z-50 bg-bg-surface/80 backdrop-blur-safe border-b border-border"
+    >
+      <div class="container mx-auto px-4">
+        <div class="flex items-center justify-between h-16">
+          <!-- Logo -->
+          <router-link to="/" class="flex items-center gap-3 group">
+            <div class="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
+              <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 2a10 10 0 0 1 0 20" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </div>
+            <span class="text-xl font-bold text-text-primary">MicroRoulette</span>
+          </router-link>
 
-    <!-- CRITICAL: Chain ID display (judges look for this!) -->
-    <ChainInfo
-      :chain-id="chainId"
-      :app-id="appId"
-      :is-connected="isConnected"
-      :is-connecting="isConnecting"
-      :error="connectionError"
-      @connect="handleConnect"
-    />
-
-    <!-- Main game area -->
-    <main class="container mx-auto px-4 py-6">
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        <!-- Left column: History & Stats -->
-        <div class="space-y-6">
-          <SpinHistory
-            :history="spinHistory"
-            @verify-spin="handleVerifySpin"
-          />
-          <HotColdNumbers
-            :hot-numbers="hotNumbers"
-            :cold-numbers="coldNumbers"
-            @place-bet="handlePlaceBet"
-          />
-        </div>
-
-        <!-- Center column: Wheel & Board -->
-        <div class="lg:col-span-2 space-y-6">
-          <!-- Roulette Wheel -->
-          <RouletteWheel
-            :is-spinning="isSpinning"
-            :last-result="lastResult"
-            @spin-complete="onSpinComplete"
-          />
-
-          <!-- Betting Board -->
-          <BettingBoard
-            :selected-chip="selectedChip"
-            :current-bets="currentBets"
-            :is-betting-open="isBettingOpen"
-            @place-bet="handlePlaceBet"
-            @remove-bet="handleRemoveBet"
-          />
-
-          <!-- Chip Selector -->
-          <ChipSelector
-            :selected-chip="selectedChip"
-            :balance="balance"
-            @select="selectedChip = $event"
-          />
-
-          <!-- Action Buttons -->
-          <div class="flex flex-wrap justify-center gap-4">
-            <button
-              @click="handleClearBets"
-              :disabled="currentBets.length === 0 || !isBettingOpen"
-              class="px-6 py-3 bg-red-600 hover:bg-red-500 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg font-bold transition"
+          <!-- Navigation Links -->
+          <div class="hidden md:flex items-center gap-1">
+            <router-link
+              to="/play"
+              class="nav-link"
+              :class="{ 'nav-link-active': $route.name === 'Game' }"
             >
-              Clear Bets
-            </button>
-            <button
-              @click="handleRepeatLastBet"
-              :disabled="lastBets.length === 0 || !isBettingOpen"
-              class="px-6 py-3 bg-yellow-600 hover:bg-yellow-500 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg font-bold transition"
+              Play
+            </router-link>
+            <router-link
+              to="/history"
+              class="nav-link"
+              :class="{ 'nav-link-active': $route.name === 'History' }"
             >
-              Repeat
-            </button>
-            <button
-              @click="handleDoubleBets"
-              :disabled="currentBets.length === 0 || !isBettingOpen"
-              class="px-6 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg font-bold transition"
+              History
+            </router-link>
+            <router-link
+              to="/leaderboard"
+              class="nav-link"
+              :class="{ 'nav-link-active': $route.name === 'Leaderboard' }"
             >
-              2x
-            </button>
-            <button
-              @click="handleSpin"
-              :disabled="currentBets.length === 0 || !isBettingOpen || isSpinning"
-              class="px-8 py-3 bg-green-600 hover:bg-green-500 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg font-bold text-xl transition"
+              Leaderboard
+            </router-link>
+            <router-link
+              to="/rules"
+              class="nav-link"
+              :class="{ 'nav-link-active': $route.name === 'Rules' }"
             >
-              SPIN
-            </button>
+              How to Play
+            </router-link>
           </div>
 
-          <!-- Current bets summary -->
-          <div class="bg-black/30 rounded-lg p-4">
-            <div class="flex justify-between items-center">
-              <span class="text-gray-400">Total Bet:</span>
-              <span class="text-2xl font-bold text-yellow-400">
-                {{ formatAmount(totalBetAmount) }} chips
-              </span>
+          <!-- Right side: Balance & Connection -->
+          <div class="flex items-center gap-4">
+            <!-- Balance Display -->
+            <div class="hidden sm:flex items-center gap-2 px-4 py-2 bg-bg-elevated rounded-lg border border-border">
+              <svg class="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v1.69c-1.51.32-2.72 1.3-2.72 2.81 0 1.79 1.49 2.69 3.66 3.21 1.95.46 2.34 1.15 2.34 1.87 0 .53-.39 1.39-2.1 1.39-1.6 0-2.23-.72-2.32-1.64H8.04c.1 1.7 1.36 2.66 2.86 2.97V19h2.34v-1.67c1.52-.29 2.72-1.16 2.73-2.77-.01-2.2-1.9-2.96-3.66-3.42z"/>
+              </svg>
+              <span class="font-mono font-semibold text-text-primary">1,000</span>
+              <span class="text-text-muted text-sm">chips</span>
             </div>
-            <div class="flex justify-between items-center mt-2">
-              <span class="text-gray-400">Max Potential Win:</span>
-              <span class="text-xl font-bold text-green-400">
-                {{ formatAmount(maxPotentialWin) }} chips
-              </span>
-            </div>
+
+            <!-- Mobile Menu Button -->
+            <button
+              @click="mobileMenuOpen = !mobileMenuOpen"
+              class="md:hidden p-2 text-text-muted hover:text-text-primary transition-colors"
+            >
+              <svg v-if="!mobileMenuOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+              <svg v-else class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
         </div>
+
+        <!-- Mobile Menu -->
+        <Transition name="slide-down">
+          <div v-if="mobileMenuOpen" class="md:hidden py-4 border-t border-border">
+            <div class="flex flex-col gap-2">
+              <router-link
+                to="/play"
+                class="mobile-nav-link"
+                @click="mobileMenuOpen = false"
+              >
+                Play Now
+              </router-link>
+              <router-link
+                to="/history"
+                class="mobile-nav-link"
+                @click="mobileMenuOpen = false"
+              >
+                History
+              </router-link>
+              <router-link
+                to="/leaderboard"
+                class="mobile-nav-link"
+                @click="mobileMenuOpen = false"
+              >
+                Leaderboard
+              </router-link>
+              <router-link
+                to="/rules"
+                class="mobile-nav-link"
+                @click="mobileMenuOpen = false"
+              >
+                How to Play
+              </router-link>
+            </div>
+          </div>
+        </Transition>
       </div>
+    </nav>
 
-      <!-- Fairness Verifier -->
-      <FairnessVerifier
-        ref="fairnessVerifier"
-        :next-seed-hash="lastSpinProof?.nextSeedHash"
-        :current-seed="lastSpinProof?.currentSeed"
-        :last-client-seed="lastSpinProof?.lastClientSeed"
-        :last-result="lastSpinProof?.lastResult"
-        :spin-number="spinNumber"
-        @verify="handleVerifyFairness"
-        @copied="handleCopied"
-        :class="['mt-8 transition-all duration-300', { 'ring-2 ring-green-400': highlightVerifier }]"
-      />
-    </main>
+    <!-- Page Content -->
+    <router-view v-slot="{ Component }">
+      <Transition name="fade" mode="out-in">
+        <component :is="Component" />
+      </Transition>
+    </router-view>
 
-    <!-- Win Popup -->
-    <WinningsPopup
-      :show="showWinPopup"
-      :amount="winAmount"
-      :result="lastResult"
-      @close="showWinPopup = false"
-    />
-
-    <!-- Connection Status Toast -->
-    <Toast
-      :show="showToast"
-      :message="toastMessage"
-      :type="toastType"
-      @close="showToast = false"
-    />
+    <!-- Global Toast Container -->
+    <Teleport to="body">
+      <div id="toast-container" class="fixed top-4 right-4 z-[100] flex flex-col gap-2">
+        <!-- Toasts will be rendered here -->
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
-import confetti from 'canvas-confetti';
-import { useLinera } from './composables/useLinera';
-import { useRoulette } from './composables/useRoulette';
-import { useBets } from './composables/useBets';
-import { checkBetWin, getPayoutMultiplier, formatAmount } from './utils/roulette';
+import { ref } from 'vue';
 
-// Components
-import Header from './components/Header.vue';
-import ChainInfo from './components/ChainInfo.vue';
-import RouletteWheel from './components/RouletteWheel.vue';
-import BettingBoard from './components/BettingBoard.vue';
-import ChipSelector from './components/ChipSelector.vue';
-import SpinHistory from './components/SpinHistory.vue';
-import HotColdNumbers from './components/HotColdNumbers.vue';
-import FairnessVerifier from './components/FairnessVerifier.vue';
-import WinningsPopup from './components/WinningsPopup.vue';
-import Toast from './components/Toast.vue';
-
-// Linera connection
-const {
-  chainId,
-  appId,
-  isConnected,
-  isConnecting,
-  isReconnecting,
-  error: connectionError,
-  connect,
-  query,
-  mutate
-} = useLinera();
-
-// Roulette state
-const {
-  spinHistory,
-  hotNumbers,
-  coldNumbers,
-  lastResult,
-  lastSpinProof,
-  isSpinning,
-  isBettingOpen,
-  tableStatus,
-  config,
-  fetchTableState,
-  spin: executeSpin,
-  verifyFairness,
-} = useRoulette(query, mutate);
-
-// Betting state
-const {
-  currentBets,
-  lastBets,
-  selectedChip,
-  availableChips,
-  totalBetAmount,
-  maxPotentialWin,
-  validationError,
-  placeBet,
-  clearBets,
-  repeatLastBet,
-  doubleBets,
-  removeBetFromPosition,
-  getBetsForContract,
-} = useBets(config);
-
-// Player state
-const balance = ref(1000); // Demo balance
-
-// Win popup
-const showWinPopup = ref(false);
-const winAmount = ref(0);
-
-// Fairness verifier ref and highlight
-const fairnessVerifier = ref(null);
-const highlightVerifier = ref(false);
-
-// Toast notifications
-const showToast = ref(false);
-const toastMessage = ref('');
-const toastType = ref('info');
-let toastTimeout = null;
-
-function showNotification(message, type = 'info', duration = 3000) {
-  toastMessage.value = message;
-  toastType.value = type;
-  showToast.value = true;
-
-  // Clear existing timeout
-  if (toastTimeout) {
-    clearTimeout(toastTimeout);
-  }
-
-  // Auto-hide after duration
-  toastTimeout = setTimeout(() => {
-    showToast.value = false;
-  }, duration);
-}
-
-// Handlers
-async function handleConnect() {
-  try {
-    await connect();
-    await fetchTableState();
-  } catch (err) {
-    console.error('Connection failed:', err);
-  }
-}
-
-function handlePlaceBet(betInfo) {
-  const success = placeBet(betInfo);
-  if (!success && validationError.value) {
-    showNotification(validationError.value, 'error', 4000);
-  }
-}
-
-function handleRemoveBet(betInfo) {
-  const removed = removeBetFromPosition(betInfo);
-  if (removed) {
-    showNotification('Bet removed', 'info', 2000);
-  }
-}
-
-function handleClearBets() {
-  clearBets();
-}
-
-function handleRepeatLastBet() {
-  repeatLastBet();
-}
-
-function handleDoubleBets() {
-  doubleBets();
-}
-
-async function handleSpin() {
-  try {
-    const bets = getBetsForContract();
-    await executeSpin(bets);
-  } catch (err) {
-    console.error('Spin failed:', err);
-    // Display contract error to user
-    const errorMessage = err.message || 'Spin operation failed';
-    showNotification(`Error: ${errorMessage}`, 'error', 5000);
-  }
-}
-
-function onSpinComplete(result) {
-  // Calculate winnings
-  let totalWin = 0;
-
-  for (const bet of currentBets.value) {
-    if (checkBetWin(bet, result)) {
-      const multiplier = getPayoutMultiplier(bet.type);
-      totalWin += bet.amount * (multiplier + 1);
-    }
-  }
-
-  if (totalWin > 0) {
-    winAmount.value = totalWin;
-    showWinPopup.value = true;
-    balance.value += totalWin - totalBetAmount.value;
-
-    // Celebrate!
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 }
-    });
-  } else {
-    balance.value -= totalBetAmount.value;
-  }
-
-  // Save last bets and clear current
-  clearBets();
-}
-
-async function handleVerifyFairness(data) {
-  const result = await verifyFairness(data.serverSeed, data.clientSeed, data.nonce);
-  return result;
-}
-
-function handleVerifySpin(spin) {
-  // Scroll to fairness verifier
-  if (fairnessVerifier.value && fairnessVerifier.value.$el) {
-    fairnessVerifier.value.$el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-
-  // Highlight the verifier temporarily
-  highlightVerifier.value = true;
-  setTimeout(() => {
-    highlightVerifier.value = false;
-  }, 2000);
-
-  // Show notification about the spin
-  showNotification(`Viewing fairness data for Spin #${spin.spinId}`, 'info', 3000);
-}
-
-function handleCopied(data) {
-  showNotification(`${data.label} copied to clipboard!`, 'success', 2000);
-}
-
-// Watch for connection status changes
-watch(isConnected, (newValue, oldValue) => {
-  // Only show notification if connection was previously lost and now restored
-  if (newValue && !oldValue && !isConnecting.value) {
-    showNotification('Connection restored!', 'success');
-  }
-});
-
-watch(isReconnecting, (newValue) => {
-  if (newValue) {
-    showNotification('Reconnecting...', 'warning', 5000);
-  }
-});
-
-watch(connectionError, (newValue) => {
-  if (newValue) {
-    showNotification(`Connection error: ${newValue}`, 'error', 5000);
-  }
-});
-
-// Initialize
-onMounted(async () => {
-  // Auto-connect on mount
-  await handleConnect();
-
-  // Poll for updates every 3 seconds
-  setInterval(() => {
-    if (isConnected.value) {
-      fetchTableState();
-    }
-  }, 3000);
-});
+const mobileMenuOpen = ref(false);
 </script>
+
+<style scoped>
+.nav-link {
+  @apply px-4 py-2 text-text-muted font-medium rounded-lg transition-all duration-200;
+  @apply hover:text-text-primary hover:bg-bg-elevated;
+}
+
+.nav-link-active {
+  @apply text-primary bg-primary/10;
+}
+
+.mobile-nav-link {
+  @apply px-4 py-3 text-text-muted font-medium rounded-lg transition-all duration-200;
+  @apply hover:text-text-primary hover:bg-bg-elevated;
+  @apply active:bg-bg-elevated;
+}
+
+/* Page transitions */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.15s ease-out;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* Mobile menu slide */
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: all 0.2s ease-out;
+}
+
+.slide-down-enter-from,
+.slide-down-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+</style>

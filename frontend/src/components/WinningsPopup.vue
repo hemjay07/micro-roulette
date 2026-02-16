@@ -11,13 +11,13 @@
         <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="handleClose"></div>
 
         <!-- Popup Content -->
-        <div class="relative bg-gradient-to-b from-green-800 to-green-900 rounded-2xl p-8 shadow-2xl border-2 border-yellow-500/50 max-w-md mx-4 transform">
+        <div class="relative bg-gradient-to-b from-bg-elevated to-bg-surface rounded-2xl p-8 shadow-2xl border border-primary/50 max-w-md mx-4 transform">
           <!-- Celebration Emoji -->
           <div class="text-center">
             <span class="text-6xl block mb-4 animate-bounce">🎉</span>
 
             <!-- YOU WON! text -->
-            <h2 class="text-4xl font-bold text-yellow-400 mb-4 animate-pulse">
+            <h2 class="text-4xl font-bold text-primary mb-4 animate-pulse">
               YOU WON!
             </h2>
 
@@ -35,19 +35,19 @@
             </div>
 
             <!-- Amount Won -->
-            <div class="bg-black/30 rounded-xl p-4 mb-6">
-              <div class="text-gray-400 text-sm">Amount Won</div>
-              <div class="text-3xl font-bold text-green-400">
+            <div class="bg-bg-main rounded-xl p-4 mb-6">
+              <div class="text-text-muted text-sm">Amount Won</div>
+              <div class="text-3xl font-bold font-mono text-success">
                 +{{ formattedAmount }}
               </div>
-              <div class="text-gray-500 text-xs">chips</div>
+              <div class="text-text-dim text-xs">chips</div>
             </div>
 
             <!-- Awesome! Button -->
             <button
               ref="closeButton"
               @click="handleClose"
-              class="w-full py-3 px-6 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-xl transition-colors text-lg"
+              class="btn-primary w-full text-lg"
             >
               Awesome!
             </button>
@@ -203,7 +203,12 @@ async function triggerConfetti() {
 /* Popup transition */
 .popup-enter-active,
 .popup-leave-active {
-  transition: all 0.3s ease;
+  transition: opacity 0.25s ease-out;
+}
+
+.popup-enter-active .relative,
+.popup-leave-active .relative {
+  transition: transform 0.25s ease-out;
 }
 
 .popup-enter-from,
@@ -213,6 +218,6 @@ async function triggerConfetti() {
 
 .popup-enter-from .relative,
 .popup-leave-to .relative {
-  transform: scale(0.9);
+  transform: scale(0.95);
 }
 </style>

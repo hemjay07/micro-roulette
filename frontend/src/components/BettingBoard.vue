@@ -1,6 +1,6 @@
 <!-- src/components/BettingBoard.vue -->
 <template>
-  <div class="betting-board bg-felt-green rounded-xl p-4 shadow-2xl border-4 border-amber-800 overflow-x-auto">
+  <div class="betting-board bg-bg-surface rounded-xl p-4 shadow-2xl border border-border overflow-x-auto">
     <div class="grid gap-1 min-w-max">
       <!-- Main betting area: 0 + Numbers + Columns -->
       <div class="flex gap-1">
@@ -614,85 +614,105 @@ function formatBetAmount(amount) {
   return formatAmount(amount);
 }
 
-// Get position for bet chip indicator (simplified - for overlay display)
+// Get position for bet chip indicator
 function getBetChipPosition(bet) {
-  // This would calculate actual position based on bet type and number
-  // For now, return hidden (actual positioning requires DOM measurements)
+  // Calculate position based on bet type
+  // For straight bets, position on the number
+  if (bet.type === 'straight') {
+    const num = bet.number;
+    if (num === 0) {
+      return { position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)' };
+    }
+    // Calculate column and row for number
+    const col = Math.ceil(num / 3) - 1;
+    const row = (num - 1) % 3;
+    const leftPercent = 60 + col * (100 - 60) / 12;
+    const topPercent = row === 2 ? 20 : row === 1 ? 50 : 80;
+    return {
+      position: 'absolute',
+      left: `${leftPercent}%`,
+      top: `${topPercent}%`,
+      transform: 'translate(-50%, -50%)',
+      zIndex: 30
+    };
+  }
+  // For other bet types, hide for now (complex positioning)
   return { display: 'none' };
 }
 </script>
 
 <style scoped>
 .betting-zone {
-  @apply px-2 py-3 bg-felt-green border-2 border-amber-700 rounded text-white font-bold text-sm;
-  @apply hover:bg-green-700 transition-colors cursor-pointer;
+  @apply px-2 py-3 bg-bg-elevated border border-border rounded-lg text-text-primary font-bold text-sm;
+  @apply hover:bg-bg-surface hover:border-primary/50 transition-all duration-150 cursor-pointer;
   min-width: 50px;
   min-height: 44px;
 }
 
 .betting-zone:hover {
-  @apply brightness-110;
+  @apply shadow-md;
 }
 
 .bet-chip-indicator {
-  @apply absolute w-6 h-6 rounded-full bg-yellow-400 text-black flex items-center justify-center;
-  @apply shadow-lg pointer-events-none;
+  @apply absolute w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center;
+  @apply shadow-lg pointer-events-none font-bold text-xs border-2 border-white/80;
+  @apply animate-scale-in;
 }
 
 /* Split bet buttons - horizontal (between adjacent numbers in same row) */
 .split-bet-horizontal {
-  @apply absolute w-3 h-10 bg-amber-600 bg-opacity-30 hover:bg-opacity-60 transition-all;
-  @apply border border-amber-500 rounded-sm cursor-pointer z-10;
+  @apply absolute w-4 h-10 bg-primary/20 hover:bg-primary/50 transition-all duration-150;
+  @apply border border-primary/30 rounded cursor-pointer z-10;
   top: 50%;
   transform: translateY(-50%);
 }
 
 .split-bet-horizontal:hover {
-  @apply bg-opacity-80 scale-110;
+  @apply scale-110 shadow-md;
 }
 
 /* Split bet buttons - vertical (between adjacent numbers in different rows) */
 .split-bet-vertical {
-  @apply absolute h-3 bg-amber-600 bg-opacity-30 hover:bg-opacity-60 transition-all;
-  @apply border border-amber-500 rounded-sm cursor-pointer z-10;
+  @apply absolute h-4 bg-primary/20 hover:bg-primary/50 transition-all duration-150;
+  @apply border border-primary/30 rounded cursor-pointer z-10;
   width: calc(100% / 12 - 4px);
   top: 0;
   transform: translateY(-50%);
 }
 
 .split-bet-vertical:hover {
-  @apply bg-opacity-80 scale-110;
+  @apply scale-110 shadow-md;
 }
 
 /* Street bet buttons (at left edge of each row) */
 .street-bet-button {
-  @apply w-3 bg-amber-600 bg-opacity-30 hover:bg-opacity-60 transition-all;
-  @apply border border-amber-500 rounded-sm cursor-pointer z-10;
+  @apply w-4 bg-primary/20 hover:bg-primary/50 transition-all duration-150;
+  @apply border border-primary/30 rounded cursor-pointer z-10;
 }
 
 .street-bet-button:hover {
-  @apply bg-opacity-80 scale-110;
+  @apply scale-110 shadow-md;
 }
 
 /* Corner bet buttons (at intersections of 4 numbers) */
 .corner-bet-button {
-  @apply absolute w-3 h-3 bg-amber-600 bg-opacity-30 hover:bg-opacity-60 transition-all;
-  @apply border border-amber-500 rounded-full cursor-pointer z-20;
+  @apply absolute w-5 h-5 bg-primary/20 hover:bg-primary/50 transition-all duration-150;
+  @apply border border-primary/30 rounded-full cursor-pointer z-20;
   top: 50%;
   transform: translate(-50%, -50%);
 }
 
 .corner-bet-button:hover {
-  @apply bg-opacity-80 scale-125;
+  @apply scale-125 shadow-md;
 }
 
 /* Six-line bet buttons (at left edge between two columns, covering all 3 rows) */
 .sixline-bet-button {
-  @apply w-3 bg-amber-600 bg-opacity-30 hover:bg-opacity-60 transition-all;
-  @apply border border-amber-500 rounded-sm cursor-pointer;
+  @apply w-4 bg-primary/20 hover:bg-primary/50 transition-all duration-150;
+  @apply border border-primary/30 rounded cursor-pointer;
 }
 
 .sixline-bet-button:hover {
-  @apply bg-opacity-80 scale-110;
+  @apply scale-110 shadow-md;
 }
 </style>

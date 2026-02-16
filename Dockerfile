@@ -33,14 +33,16 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs
+    && apt-get install -y nodejs \
+    && npm install -g serve
 
 COPY --from=builder /usr/local/cargo/bin/linera* /usr/local/bin/
 COPY --from=builder /app /app
 
 WORKDIR /app
-RUN chmod +x init.sh
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x docker-entrypoint.sh init.sh
 
-EXPOSE 8080 8081
+EXPOSE 8080 8082
 
-CMD ["./init.sh"]
+CMD ["./docker-entrypoint.sh"]

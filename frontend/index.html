@@ -6,6 +6,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MicroRoulette - Provably Fair On-Chain Roulette</title>
 
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Play provably fair roulette on the Linera blockchain. Transparent, instant, and verifiable betting with crypto." />
+    <meta name="keywords" content="roulette, blockchain, crypto, gambling, provably fair, Linera, web3" />
+
+    <!-- Open Graph / Social -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="MicroRoulette - Provably Fair On-Chain Roulette" />
+    <meta property="og:description" content="Play provably fair roulette on the blockchain. Transparent, instant, and verifiable." />
+    <meta property="og:image" content="/og-image.png" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="MicroRoulette" />
+    <meta name="twitter:description" content="Provably fair on-chain roulette" />
+
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#0A0A0F" />
+
+    <!-- Fonts - Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
     <!-- Import map for linera-web WASM -->
     <script type="importmap">
       {
@@ -14,6 +37,36 @@
         }
       }
     </script>
+
+    <style>
+      /* Critical CSS - prevent flash of unstyled content */
+      html {
+        background-color: #0A0A0F;
+      }
+      body {
+        margin: 0;
+        background-color: #0A0A0F;
+        color: #FAFAFA;
+        font-family: 'Inter', system-ui, sans-serif;
+      }
+      /* Loading spinner */
+      #app:empty::after {
+        content: '';
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        width: 40px;
+        height: 40px;
+        margin: -20px 0 0 -20px;
+        border: 3px solid #27272A;
+        border-top-color: #F59E0B;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
   </head>
   <body>
     <div id="app"></div>

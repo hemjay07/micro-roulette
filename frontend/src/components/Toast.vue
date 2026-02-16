@@ -8,7 +8,7 @@
       aria-live="polite"
     >
       <div
-        class="rounded-lg shadow-lg p-4 border-2"
+        class="rounded-xl shadow-lg p-4 border backdrop-blur-safe"
         :class="toastClasses"
       >
         <div class="flex items-center gap-3">
@@ -120,16 +120,16 @@ const props = defineProps({
 const emit = defineEmits(['close']);
 
 const toastClasses = computed(() => {
-  const base = 'text-white';
+  const base = 'text-text-primary';
   switch (props.type) {
     case 'success':
-      return `${base} bg-green-600 border-green-500`;
+      return `${base} bg-success/90 border-success`;
     case 'error':
-      return `${base} bg-red-600 border-red-500`;
+      return `${base} bg-error/90 border-error`;
     case 'warning':
-      return `${base} bg-yellow-600 border-yellow-500`;
+      return `${base} bg-warning/90 border-warning text-bg-main`;
     default:
-      return `${base} bg-blue-600 border-blue-500`;
+      return `${base} bg-primary/90 border-primary`;
   }
 });
 
@@ -141,7 +141,7 @@ function handleClose() {
 <style scoped>
 .toast-enter-active,
 .toast-leave-active {
-  transition: all 0.3s ease;
+  transition: transform 0.25s ease-out, opacity 0.25s ease-out;
 }
 
 .toast-enter-from {

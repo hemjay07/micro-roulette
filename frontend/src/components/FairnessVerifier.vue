@@ -1,37 +1,55 @@
 <!-- src/components/FairnessVerifier.vue -->
 <template>
-  <div class="fairness-verifier bg-black/30 backdrop-blur-sm rounded-xl p-4 border border-green-800/50">
-    <div class="flex items-center justify-between mb-4">
-      <h3 class="text-lg font-medium text-white flex items-center space-x-2">
-        <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <div class="fairness-verifier card">
+    <!-- Collapsible Header -->
+    <button
+      @click="isExpanded = !isExpanded"
+      class="w-full flex items-center justify-between"
+    >
+      <h3 class="text-lg font-semibold text-text-primary flex items-center gap-2">
+        <svg class="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
         </svg>
         <span>Provably Fair</span>
       </h3>
-    </div>
+      <div class="flex items-center gap-2">
+        <span v-if="nextSeedHash" class="text-xs text-text-dim hidden sm:inline">Next hash ready</span>
+        <svg
+          class="w-5 h-5 text-text-muted transition-transform duration-200"
+          :class="{ 'rotate-180': isExpanded }"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+    </button>
 
+    <!-- Collapsible Content -->
+    <div v-show="isExpanded" class="mt-4">
     <!-- Seed Information -->
     <div class="space-y-3 mb-4">
       <!-- Next Seed Hash (Committed) -->
-      <div class="bg-black/30 rounded-lg p-3">
+      <div class="bg-bg-main rounded-lg p-3">
         <div class="flex items-center justify-between">
-          <span class="text-xs text-gray-400">Next Seed Hash (Committed)</span>
-          <span class="text-[10px] px-2 py-0.5 bg-yellow-600/30 text-yellow-400 rounded">LOCKED</span>
+          <span class="text-xs text-text-dim">Next Seed Hash (Committed)</span>
+          <span class="text-[10px] px-2 py-0.5 bg-warning/30 text-warning rounded">LOCKED</span>
         </div>
         <div class="flex items-center space-x-2">
-          <div class="font-mono text-sm text-green-400 mt-1 truncate flex-1">
+          <div class="font-mono text-sm text-primary mt-1 truncate flex-1">
             {{ nextSeedHash || 'Not available' }}
           </div>
           <button
             v-if="nextSeedHash"
             @click="copyToClipboard(nextSeedHash, 'nextHash')"
-            class="p-1 hover:bg-green-900/30 rounded transition-colors flex-shrink-0"
+            class="p-1 hover:bg-bg-elevated rounded transition-colors flex-shrink-0"
             :title="copiedNextHash ? 'Copied!' : 'Copy hash'"
           >
             <svg v-if="!copiedNextHash" class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </svg>
-            <svg v-else class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg v-else class="w-4 h-4 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
             </svg>
           </button>
@@ -39,10 +57,10 @@
       </div>
 
       <!-- Current Seed (Revealed) -->
-      <div class="bg-black/30 rounded-lg p-3">
+      <div class="bg-bg-main rounded-lg p-3">
         <div class="flex items-center justify-between">
-          <span class="text-xs text-gray-400">Current Seed (Revealed)</span>
-          <span v-if="currentSeed" class="text-[10px] px-2 py-0.5 bg-green-600/30 text-green-400 rounded">REVEALED</span>
+          <span class="text-xs text-text-dim">Current Seed (Revealed)</span>
+          <span v-if="currentSeed" class="text-[10px] px-2 py-0.5 bg-success/30 text-success rounded">REVEALED</span>
         </div>
         <div class="flex items-center space-x-2">
           <div class="font-mono text-sm text-gray-400 mt-1 truncate flex-1">
@@ -51,13 +69,13 @@
           <button
             v-if="currentSeed"
             @click="copyToClipboard(currentSeed, 'currentSeed')"
-            class="p-1 hover:bg-green-900/30 rounded transition-colors flex-shrink-0"
+            class="p-1 hover:bg-bg-elevated rounded transition-colors flex-shrink-0"
             :title="copiedCurrentSeed ? 'Copied!' : 'Copy seed'"
           >
             <svg v-if="!copiedCurrentSeed" class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </svg>
-            <svg v-else class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg v-else class="w-4 h-4 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
             </svg>
           </button>
@@ -65,10 +83,10 @@
       </div>
 
       <!-- Last Client Seed -->
-      <div class="bg-black/30 rounded-lg p-3">
+      <div class="bg-bg-main rounded-lg p-3">
         <div class="flex items-center justify-between">
-          <span class="text-xs text-gray-400">Last Client Seed</span>
-          <span v-if="lastClientSeed" class="text-[10px] px-2 py-0.5 bg-blue-600/30 text-blue-400 rounded">CLIENT</span>
+          <span class="text-xs text-text-dim">Last Client Seed</span>
+          <span v-if="lastClientSeed" class="text-[10px] px-2 py-0.5 bg-primary/30 text-primary rounded">CLIENT</span>
         </div>
         <div class="flex items-center space-x-2">
           <div class="font-mono text-sm text-gray-400 mt-1 truncate flex-1">
@@ -77,13 +95,13 @@
           <button
             v-if="lastClientSeed"
             @click="copyToClipboard(lastClientSeed, 'clientSeed')"
-            class="p-1 hover:bg-green-900/30 rounded transition-colors flex-shrink-0"
+            class="p-1 hover:bg-bg-elevated rounded transition-colors flex-shrink-0"
             :title="copiedClientSeed ? 'Copied!' : 'Copy client seed'"
           >
             <svg v-if="!copiedClientSeed" class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </svg>
-            <svg v-else class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg v-else class="w-4 h-4 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
             </svg>
           </button>
@@ -91,10 +109,10 @@
       </div>
 
       <!-- Nonce (Spin Number) -->
-      <div class="bg-black/30 rounded-lg p-3">
+      <div class="bg-bg-main rounded-lg p-3">
         <div class="flex items-center justify-between">
-          <span class="text-xs text-gray-400">Nonce (Spin Number)</span>
-          <span v-if="spinNumber > 0" class="text-[10px] px-2 py-0.5 bg-purple-600/30 text-purple-400 rounded">NONCE</span>
+          <span class="text-xs text-text-dim">Nonce (Spin Number)</span>
+          <span v-if="spinNumber > 0" class="text-[10px] px-2 py-0.5 bg-primary/30 text-primary rounded">NONCE</span>
         </div>
         <div class="flex items-center space-x-2">
           <div class="font-mono text-sm text-gray-400 mt-1 flex-1">
@@ -103,13 +121,13 @@
           <button
             v-if="spinNumber > 0"
             @click="copyToClipboard(spinNumber.toString(), 'nonce')"
-            class="p-1 hover:bg-green-900/30 rounded transition-colors flex-shrink-0"
+            class="p-1 hover:bg-bg-elevated rounded transition-colors flex-shrink-0"
             :title="copiedNonce ? 'Copied!' : 'Copy nonce'"
           >
             <svg v-if="!copiedNonce" class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </svg>
-            <svg v-else class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg v-else class="w-4 h-4 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
             </svg>
           </button>
@@ -185,13 +203,13 @@
       <!-- Verification Result -->
       <div v-if="verificationResult" class="mt-3 p-3 rounded-lg" :class="verificationResult.isValid ? 'bg-green-900/30 border border-green-700' : 'bg-red-900/30 border border-red-700'">
         <div class="flex items-center space-x-2 mb-2">
-          <svg v-if="verificationResult.isValid" class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg v-if="verificationResult.isValid" class="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <svg v-else class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <span :class="verificationResult.isValid ? 'text-green-400' : 'text-red-400'">
+          <span :class="verificationResult.isValid ? 'text-success' : 'text-red-400'">
             {{ verificationResult.isValid ? 'Valid!' : 'Invalid' }}
           </span>
         </div>
@@ -259,11 +277,15 @@
         </div>
       </div>
     </div>
+    </div><!-- End collapsible content -->
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue';
+
+// Collapsed by default
+const isExpanded = ref(false);
 
 const props = defineProps({
   nextSeedHash: {

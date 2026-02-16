@@ -1,7 +1,12 @@
 <!-- src/components/ChipSelector.vue -->
 <template>
-  <div class="chip-selector bg-black/30 backdrop-blur-sm rounded-xl p-4 border border-green-800/50">
-    <h3 class="text-sm font-medium text-gray-400 mb-3">Select Chip Value</h3>
+  <div class="card">
+    <h3 class="text-sm font-semibold text-text-muted mb-4 flex items-center gap-2">
+      <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      Select Chip Value
+    </h3>
 
     <div class="flex flex-wrap gap-3 justify-center">
       <button
@@ -22,8 +27,12 @@
     </div>
 
     <!-- Current selection indicator -->
-    <div class="mt-3 text-center text-sm text-gray-400">
-      Current: <span class="font-bold text-white">{{ selectedChip }}</span>
+    <div class="mt-4 text-center">
+      <span class="inline-flex items-center gap-2 px-4 py-2 bg-bg-main rounded-lg">
+        <span class="text-text-muted text-sm">Selected:</span>
+        <span class="font-bold font-mono text-primary text-lg">{{ selectedChip }}</span>
+        <span class="text-text-dim text-sm">chips</span>
+      </span>
     </div>
   </div>
 </template>
@@ -44,7 +53,6 @@ const props = defineProps({
 
 const emit = defineEmits(['select']);
 
-// Chip definitions with colors
 const chipDefs = [
   { value: 1, label: '1', colorClass: 'chip-white' },
   { value: 5, label: '5', colorClass: 'chip-red' },
@@ -54,7 +62,6 @@ const chipDefs = [
   { value: 500, label: '500', colorClass: 'chip-purple' },
 ];
 
-// Computed chips with disabled state based on balance
 const chips = computed(() => {
   return chipDefs.map(chip => ({
     ...chip,
@@ -63,7 +70,6 @@ const chips = computed(() => {
 });
 
 function selectChip(value) {
-  // Don't allow selecting chips that exceed balance
   if (value > props.balance) return;
   emit('select', value);
 }
@@ -71,45 +77,48 @@ function selectChip(value) {
 
 <style scoped>
 .chip {
-  @apply w-12 h-12 rounded-full flex items-center justify-center font-bold cursor-pointer transition-all;
-  @apply border-4 border-white shadow-lg text-sm;
+  @apply w-14 h-14 rounded-full flex items-center justify-center font-bold cursor-pointer;
+  @apply border-4 border-white/80 shadow-lg text-sm;
+  @apply transition-all duration-150 ease-out;
 }
 
-.chip:hover {
-  @apply transform scale-110;
+@media (hover: hover) {
+  .chip:hover:not(.chip-disabled) {
+    @apply scale-110;
+  }
 }
 
 .chip.selected {
-  @apply ring-4 ring-yellow-400 ring-offset-2 ring-offset-transparent;
+  @apply ring-4 ring-primary ring-offset-2 ring-offset-bg-main shadow-lg;
 }
 
 /* Chip colors */
 .chip-white {
-  @apply bg-gray-100 text-gray-900 border-gray-300;
+  @apply bg-slate-100 text-slate-900 border-slate-300;
 }
 
 .chip-red {
-  @apply bg-red-600 text-white border-red-300;
+  @apply bg-red-500 text-white border-red-300;
 }
 
 .chip-blue {
-  @apply bg-blue-600 text-white border-blue-300;
+  @apply bg-blue-500 text-white border-blue-300;
 }
 
 .chip-green {
-  @apply bg-green-600 text-white border-green-300;
+  @apply bg-emerald-500 text-white border-emerald-300;
 }
 
 .chip-black {
-  @apply bg-gray-900 text-white border-gray-600;
+  @apply bg-slate-800 text-white border-slate-500;
 }
 
 .chip-purple {
-  @apply bg-purple-600 text-white border-purple-300;
+  @apply bg-violet-600 text-white border-violet-400;
 }
 
 .chip-disabled {
-  @apply opacity-40 cursor-not-allowed;
+  @apply opacity-30 cursor-not-allowed;
 }
 
 .chip-disabled:hover {

@@ -1,43 +1,49 @@
 <!-- src/components/Header.vue -->
 <template>
-  <header class="bg-black/50 backdrop-blur-sm border-b border-green-700 px-4 py-4">
+  <header class="bg-bg-surface/80 backdrop-blur-safe border-b border-border px-4 py-4">
     <div class="container mx-auto flex items-center justify-between">
       <!-- Logo and Title -->
-      <div class="flex items-center space-x-3">
-        <span class="text-4xl">🎰</span>
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center shadow-md">
+          <svg class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 2a10 10 0 0 1 0 20" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        </div>
         <div>
-          <h1 class="text-2xl font-bold text-white">MicroRoulette</h1>
-          <p class="text-sm text-green-400">Every Spin On-Chain</p>
+          <h1 class="text-2xl font-bold text-text-primary">MicroRoulette</h1>
+          <p class="text-sm text-primary">Every Spin On-Chain</p>
         </div>
       </div>
 
       <!-- Balance Display -->
-      <div class="flex items-center space-x-4">
+      <div class="flex items-center gap-4">
         <!-- Balance Section -->
-        <div class="bg-black/30 rounded-lg px-4 py-2 flex items-center space-x-3">
-          <div class="flex items-center space-x-2">
-            <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.736 6.979C9.208 6.193 9.696 6 10 6c.304 0 .792.193 1.264.979a1 1 0 001.715-1.029C12.279 4.784 11.232 4 10 4s-2.279.784-2.979 1.95c-.285.475-.507 1-.67 1.55H6a1 1 0 000 2h.013a9.358 9.358 0 000 1H6a1 1 0 100 2h.351c.163.55.385 1.075.67 1.55C7.721 15.216 8.768 16 10 16s2.279-.784 2.979-1.95a1 1 0 10-1.715-1.029c-.472.786-.96.979-1.264.979-.304 0-.792-.193-1.264-.979a4.265 4.265 0 01-.264-.521H10a1 1 0 100-2H8.017a7.36 7.36 0 010-1H10a1 1 0 100-2H8.472c.08-.185.167-.36.264-.521z" />
+        <div class="card flex items-center gap-3 !p-3">
+          <div class="flex items-center gap-2">
+            <svg class="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v1.69c-1.51.32-2.72 1.3-2.72 2.81 0 1.79 1.49 2.69 3.66 3.21 1.95.46 2.34 1.15 2.34 1.87 0 .53-.39 1.39-2.1 1.39-1.6 0-2.23-.72-2.32-1.64H8.04c.1 1.7 1.36 2.66 2.86 2.97V19h2.34v-1.67c1.52-.29 2.72-1.16 2.73-2.77-.01-2.2-1.9-2.96-3.66-3.42z"/>
             </svg>
-            <span class="text-gray-400 text-sm">Balance</span>
+            <span class="text-text-muted text-sm">Balance</span>
           </div>
-          <div class="flex items-center space-x-1">
-            <span class="text-xl font-bold text-white">{{ formattedBalance }}</span>
-            <span class="text-xs text-gray-500">chips</span>
+          <div class="flex items-center gap-1">
+            <span class="text-xl font-bold font-mono text-text-primary">{{ formattedBalance }}</span>
+            <span class="text-xs text-text-dim">chips</span>
           </div>
         </div>
 
         <!-- Deposit/Withdraw Buttons (when connected) -->
-        <div v-if="isConnected" class="flex space-x-2">
+        <div v-if="isConnected" class="hidden sm:flex gap-2">
           <button
             @click="$emit('deposit')"
-            class="px-3 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-sm font-medium transition-colors"
+            class="btn-primary !py-2 !px-4 text-sm"
           >
             Deposit
           </button>
           <button
             @click="$emit('withdraw')"
-            class="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition-colors"
+            class="btn-secondary !py-2 !px-4 text-sm"
           >
             Withdraw
           </button>
@@ -73,15 +79,13 @@ watch(() => props.balance, (newValue, oldValue) => {
   const newBalance = Number(newValue) || 0;
   const oldBalance = Number(oldValue) || 0;
 
-  // Cancel any ongoing animation
   if (animationFrameId) {
     cancelAnimationFrame(animationFrameId);
   }
 
-  // Animate the balance change
   const difference = newBalance - oldBalance;
-  const duration = 1000; // 1 second animation
-  const steps = 30; // Number of frames
+  const duration = 1000;
+  const steps = 30;
   const increment = difference / steps;
   const stepDuration = duration / steps;
 
@@ -96,7 +100,6 @@ watch(() => props.balance, (newValue, oldValue) => {
         animationFrameId = requestAnimationFrame(animate);
       }, stepDuration);
     } else {
-      // Ensure final value is exact
       displayBalance.value = newBalance;
       animationFrameId = null;
     }
@@ -109,7 +112,6 @@ watch(() => props.balance, (newValue, oldValue) => {
   }
 });
 
-// Format balance for display
 const formattedBalance = computed(() => {
   return formatAmount(Math.round(displayBalance.value));
 });
